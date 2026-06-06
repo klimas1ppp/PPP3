@@ -48,12 +48,40 @@ body::before {
   padding: 1rem 1.5rem;
 }
 
-.site-logo {
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.logo-mark {
+  flex-shrink: 0;
+  display: block;
+}
+
+.logo-pillar-body {
+  fill: var(--color-gold);
+  opacity: 0.16;
+}
+
+.logo-pillar-yield {
+  fill: var(--color-gold);
+}
+
+.logo-pillar-line {
+  stroke: var(--color-gold);
+  stroke-opacity: 0.35;
+  stroke-width: 0.75;
+  stroke-linecap: round;
+}
+
+.logo-word {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.125rem;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.2em;
   color: var(--color-paper);
+  padding-right: 0.2em;
 }
 
 .wallet-btn {
@@ -239,11 +267,6 @@ body::before {
   background: var(--color-ink);
   border: 1px dashed var(--color-border);
   border-radius: 0.85rem;
-}
-
-.connect-nudge-icon {
-  color: var(--color-gold-dim);
-  opacity: 0.7;
 }
 
 .connect-nudge-text {

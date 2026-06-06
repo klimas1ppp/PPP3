@@ -63,11 +63,6 @@ function ConnectNudge() {
 
   return (
     <div className="connect-nudge">
-      <div className="connect-nudge-icon" aria-hidden>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
       <p className="connect-nudge-text">
         Connect your wallet to deposit USDC and put your savings to work for good — your principal stays fully yours.
       </p>
