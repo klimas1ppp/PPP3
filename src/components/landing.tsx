@@ -54,7 +54,7 @@ export function Impact() {
     <section className="info-section">
       <h2 className="info-heading">Where yield creates impact</h2>
       <p className="info-lead">
-        Your deposit can fund tangible humanitarian outcomes — without permanently giving away your savings.
+        Your deposit can fund tangible humanitarian outcomes.
       </p>
       <ul className="impact-grid">
         {IMPACT.map((item) => (

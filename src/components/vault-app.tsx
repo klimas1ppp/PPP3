@@ -16,9 +16,6 @@ export function VaultApp() {
       <header className="vault-header">
         <p className="vault-eyebrow">Charity Vault · {VAULT.chainName}</p>
         <h2 className="vault-title">Deposit USDC</h2>
-        <p className="vault-tagline">
-          Charity without sacrifice — not a lottery, not a donation you can&apos;t get back.
-        </p>
       </header>
 
       <StatsRow vault={vault} />
@@ -51,7 +48,7 @@ export function VaultApp() {
 
       <footer className="vault-footer">
         <a href={`${VAULT.explorer}/address/${VAULT.address}`} target="_blank" rel="noreferrer">
-          View vault on BaseScan ↗
+          View vault on BaseScan →
         </a>
       </footer>
     </div>
@@ -74,7 +71,6 @@ function ConnectNudge() {
       >
         {vault.isConnecting ? "Connecting…" : "Connect Wallet"}
       </button>
-      <p className="connect-nudge-hint">Works with MetaMask, Coinbase Wallet, and others on Base.</p>
     </div>
   );
 }
