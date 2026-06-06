@@ -12,6 +12,8 @@ export const VAULT = {
     decimals: 6,
   },
 
+  charityName: "Principal Preserving Philanthropy",
+
   walletConnectId: "1750b0211ee2f3464f0806de44e98b06",
   explorer: "https://basescan.org",
 } as const;

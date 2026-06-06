@@ -1,113 +1,96 @@
 "use client";
 
-import { useState } from "react";
 import { VAULT } from "@/config";
-import { WalletButton } from "@/components/wallet-button";
+import { fmtAmount, fmtUsd, humanizeError, sanitizeAmount, toUnits, trimUnits } from "@/lib/format";
 import { useDeposit, useVault, useWithdraw, type TxPhase } from "@/hooks/use-vault";
-import {
-  fmtAmount,
-  fmtUsd,
-  humanizeError,
-  sanitizeAmount,
-  toUnits,
-  trimUnits,
-} from "@/lib/format";
+import { NetworkBanner } from "@/components/wallet-button";
+import { useState } from "react";
 
 export function VaultApp() {
   const vault = useVault();
-  const d = VAULT.asset.decimals;
-  const hasDeposit = vault.isConnected && vault.maxWithdraw > 0n;
+  const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
+
+  const canTransact = vault.isConnected && vault.isOnBase;
 
   return (
-    <div className="shell">
-      <div className="deco deco-a" aria-hidden />
-      <div className="deco deco-b" aria-hidden />
-
-      <header className="nav">
-        <div className="nav-brand">
-          <span className="nav-title">Charity Vault</span>
-          <span className="pill">{VAULT.chainName}</span>
-        </div>
-        <WalletButton />
+    <div className="vault-card">
+      <header className="vault-header">
+        <p className="vault-eyebrow">PoolTogether · Base</p>
+        <h1 className="vault-title">{VAULT.charityName}</h1>
+        <p className="vault-tagline">
+          Deposit USDC. Keep your principal. Yield goes to charity.
+        </p>
       </header>
 
-      <main className="stage">
-        <section className="intro">
-          <h1 className="vault-name">{vault.isLoading ? "…" : vault.vaultName ?? "Vault"}</h1>
-          <p className="vault-lede">
-            Deposit {VAULT.asset.symbol}. Your principal stays yours — only yield goes to charity.
-          </p>
+      <StatsRow vault={vault} />
 
-          <div className="tvl-card">
-            <span className="tvl-label">Total in vault</span>
-            <span className="tvl-amount">{fmtUsd(vault.totalAssets, d)}</span>
-            {!vault.isLoading && vault.vaultSymbol && (
-              <span className="tvl-meta">{vault.vaultSymbol} on {VAULT.chainName}</span>
-            )}
-          </div>
+      <NetworkBanner />
 
-          {vault.isConnected && vault.isOnBase && (
-            <div className={`position-card ${hasDeposit ? "position-active" : ""}`}>
-              <span className="position-label">Your balance</span>
-              <span className="position-amount">
-                {fmtAmount(vault.maxWithdraw, d)} {VAULT.asset.symbol}
-              </span>
-              {hasDeposit ? (
-                <span className="position-hint">Available to withdraw anytime</span>
-              ) : (
-                <span className="position-hint">Nothing deposited yet</span>
-              )}
-            </div>
-          )}
-
-          <a
-            className="contract-link"
-            href={`${VAULT.explorer}/address/${VAULT.address}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View contract on Basescan ↗
-          </a>
-        </section>
-
-        <section className="action-card">
-          {!vault.isConnected ? (
-            <div className="action-empty">
-              <div className="action-icon" aria-hidden>◎</div>
-              <p>Connect a wallet to deposit or withdraw.</p>
-            </div>
-          ) : !vault.isOnBase ? (
-            <div className="action-empty">
-              <p>Switch to {VAULT.chainName} to continue.</p>
-              <button type="button" className="btn-primary" onClick={vault.switchToBase} disabled={vault.isSwitching}>
-                {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
+      {!canTransact ? (
+        vault.isConnected && !vault.isOnBase ? (
+          <SwitchNetworkButton />
+        ) : null
+      ) : (
+        <>
+          <div className="tab-row">
+            {(["deposit", "withdraw"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`tab ${tab === t ? "tab-active" : ""}`}
+                onClick={() => setTab(t)}
+              >
+                {t}
               </button>
-            </div>
-          ) : (
-            <ManagePanel />
-          )}
+            ))}
+          </div>
+          {tab === "deposit" ? <DepositPanel /> : <WithdrawPanel />}
+        </>
+      )}
 
-          {vault.connectError && <div className="banner banner-error">{vault.connectError}</div>}
-        </section>
-      </main>
+      {vault.connectError && <Banner tone="error">{vault.connectError}</Banner>}
+
+      <footer className="vault-footer">
+        <a href={`${VAULT.explorer}/address/${VAULT.address}`} target="_blank" rel="noreferrer">
+          View vault on BaseScan ↗
+        </a>
+      </footer>
     </div>
   );
 }
 
-function ManagePanel() {
-  const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
+function SwitchNetworkButton() {
+  const vault = useVault();
+  return (
+    <button type="button" className="btn-primary" onClick={vault.switchToBase} disabled={vault.isSwitching}>
+      {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
+    </button>
+  );
+}
+
+function StatsRow({ vault }: { vault: ReturnType<typeof useVault> }) {
+  const d = VAULT.asset.decimals;
 
   return (
-    <>
-      <div className="tab-row">
-        {(["deposit", "withdraw"] as const).map((t) => (
-          <button key={t} type="button" className={`tab ${tab === t ? "tab-active" : ""}`} onClick={() => setTab(t)}>
-            {t}
-          </button>
-        ))}
-      </div>
-      {tab === "deposit" ? <DepositPanel /> : <WithdrawPanel />}
-    </>
+    <div className={`stats-row ${vault.isConnected ? "stats-row-2" : "stats-row-1"}`}>
+      <Stat label="Vault total" value={fmtUsd(vault.totalAssets, d)} loading={vault.isLoading} />
+      {vault.isConnected && (
+        <Stat
+          label="Your deposit"
+          value={`${fmtAmount(vault.deposited, d)} ${VAULT.asset.symbol}`}
+          loading={vault.isLoading}
+        />
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value, loading }: { label: string; value: string; loading: boolean }) {
+  return (
+    <div className="stat">
+      <span className="stat-label">{label}</span>
+      <span className="stat-value">{loading ? "…" : value}</span>
+    </div>
   );
 }
 
@@ -125,12 +108,10 @@ function DepositPanel() {
       <AmountField
         value={amount}
         onChange={setAmount}
-        onMax={() =>
-          setAmount(vault.walletBalance > 0n ? trimUnits(vault.walletBalance, VAULT.asset.decimals) : "")
-        }
+        onMax={() => setAmount(vault.walletBalance > 0n ? trimUnits(vault.walletBalance, VAULT.asset.decimals) : "")}
         symbol={VAULT.asset.symbol}
-        hint={`In wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
-        error={insufficient ? "Not enough in wallet" : undefined}
+        hint={`Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
+        error={insufficient ? "Insufficient balance" : undefined}
       />
       <TxStatus state={deposit.state} verb="Deposit" onDone={() => { setAmount(""); deposit.reset(); }} />
       {needsApproval && !deposit.busy && deposit.state.phase !== "success" ? (
@@ -152,20 +133,20 @@ function WithdrawPanel() {
   const withdraw = useWithdraw(() => vault.refetch());
 
   const wei = toUnits(amount, VAULT.asset.decimals);
-  const insufficient = wei > vault.maxWithdraw;
+  const insufficient = wei > vault.deposited;
 
   return (
     <div className="form">
       <AmountField
         value={amount}
         onChange={setAmount}
-        onMax={() => setAmount(vault.maxWithdraw > 0n ? trimUnits(vault.maxWithdraw, VAULT.asset.decimals) : "")}
+        onMax={() => setAmount(vault.deposited > 0n ? trimUnits(vault.deposited, VAULT.asset.decimals) : "")}
         symbol={VAULT.asset.symbol}
-        hint={`Available: ${fmtAmount(vault.maxWithdraw, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
-        error={insufficient ? "Exceeds balance" : undefined}
+        hint={`Deposited: ${fmtAmount(vault.deposited, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
+        error={insufficient ? "Exceeds your deposit" : undefined}
       />
       <TxStatus state={withdraw.state} verb="Withdraw" onDone={() => { setAmount(""); withdraw.reset(); }} />
-      <button type="button" className="btn-secondary" disabled={wei <= 0n || insufficient || withdraw.busy} onClick={() => withdraw.withdraw(amount)}>
+      <button type="button" className="btn-primary" disabled={wei <= 0n || insufficient || withdraw.busy} onClick={() => withdraw.withdraw(amount)}>
         {btnLabel(withdraw.state.phase, "Withdraw")}
       </button>
     </div>
@@ -199,7 +180,7 @@ function AmountField({
         />
         <span className="amount-symbol">{symbol}</span>
         <button type="button" className="amount-max" onClick={onMax}>
-          Max
+          MAX
         </button>
       </div>
       <div className="amount-meta">
@@ -224,19 +205,19 @@ function TxStatus({
 
   if (state.phase === "error") {
     return (
-      <div className="banner banner-error">
+      <Banner tone="error">
         {state.error ?? humanizeError(null)}{" "}
-        <button type="button" className="banner-link" onClick={onDone}>Dismiss</button>
-      </div>
+        <button type="button" className="banner-link" onClick={onDone}>dismiss</button>
+      </Banner>
     );
   }
   if (state.phase === "success") {
     return (
-      <div className="banner banner-success">
+      <Banner tone="success">
         {verb} confirmed.{" "}
-        {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="banner-link">View tx</a>}{" "}
-        <button type="button" className="banner-link" onClick={onDone}>Done</button>
-      </div>
+        {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="banner-link">view tx</a>}{" "}
+        <button type="button" className="banner-link" onClick={onDone}>done</button>
+      </Banner>
     );
   }
 
@@ -244,20 +225,24 @@ function TxStatus({
     approving: "Confirm approval in wallet…",
     "approve-confirming": "Approval confirming…",
     signing: `Confirm ${verb.toLowerCase()} in wallet…`,
-    pending: "Confirming on chain…",
+    pending: "Transaction confirming…",
   };
 
   return (
-    <div className="banner banner-info">
+    <Banner tone="info">
       {msgs[state.phase]}{" "}
-      {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="banner-link">View tx</a>}
-    </div>
+      {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="banner-link">view tx</a>}
+    </Banner>
   );
+}
+
+function Banner({ tone, children }: { tone: "info" | "warn" | "error" | "success"; children: React.ReactNode }) {
+  return <div className={`banner banner-${tone}`}>{children}</div>;
 }
 
 function btnLabel(phase: TxPhase, verb: string) {
   if (phase === "signing") return "Confirm in wallet…";
   if (phase === "pending") return `${verb}ing…`;
-  if (phase === "success") return "Done";
+  if (phase === "success") return "Done ✓";
   return verb;
 }

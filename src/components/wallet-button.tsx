@@ -1,45 +1,46 @@
 "use client";
 
 import { useVault } from "@/hooks/use-vault";
-import { shortAddr } from "@/lib/format";
 import { VAULT } from "@/config";
 
 export function WalletButton() {
   const vault = useVault();
 
-  if (!vault.isConnected) {
+  if (vault.isConnected && vault.address) {
     return (
       <button
         type="button"
-        className="nav-wallet nav-wallet-connect"
-        onClick={vault.connect}
-        disabled={vault.isConnecting}
+        className="wallet-btn wallet-btn-connected"
+        onClick={() => vault.disconnect()}
+        title="Disconnect"
       >
-        {vault.isConnecting ? "Connecting…" : "Connect Wallet"}
+        <span className="wallet-dot" />
+        {vault.address.slice(0, 6)}…{vault.address.slice(-4)}
       </button>
     );
   }
 
   return (
-    <div className="nav-wallet-group">
-      {vault.isConnected && !vault.isOnBase && (
-        <button
-          type="button"
-          className="nav-wallet nav-wallet-warn"
-          onClick={vault.switchToBase}
-          disabled={vault.isSwitching}
-        >
-          {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
-        </button>
-      )}
-      <button
-        type="button"
-        className="nav-wallet nav-wallet-connected"
-        onClick={() => vault.disconnect()}
-        title="Click to disconnect"
-      >
-        <span className="wallet-dot" />
-        {shortAddr(vault.address)}
+    <button
+      type="button"
+      className="wallet-btn"
+      onClick={vault.connect}
+      disabled={vault.isConnecting}
+    >
+      {vault.isConnecting ? "Connecting…" : "Connect Wallet"}
+    </button>
+  );
+}
+
+export function NetworkBanner() {
+  const vault = useVault();
+  if (!vault.isConnected || vault.isOnBase) return null;
+
+  return (
+    <div className="banner banner-warn network-banner">
+      Wrong network.{" "}
+      <button type="button" onClick={vault.switchToBase} className="banner-link">
+        {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
       </button>
     </div>
   );
