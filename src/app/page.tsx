@@ -1,3 +1,4 @@
+import { Hero, HowItWorks, Impact } from "@/components/landing";
 import { VaultApp } from "@/components/vault-app";
 import { WalletButton } from "@/components/wallet-button";
 
@@ -9,7 +10,12 @@ export default function Home() {
         <WalletButton />
       </header>
       <main className="page">
-        <VaultApp />
+        <div className="page-inner">
+          <Hero />
+          <VaultApp />
+          <HowItWorks />
+          <Impact />
+        </div>
       </main>
     </>
   );

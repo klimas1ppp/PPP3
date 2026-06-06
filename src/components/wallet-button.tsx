@@ -1,7 +1,6 @@
 "use client";
 
 import { useVault } from "@/hooks/use-vault";
-import { VAULT } from "@/config";
 
 export function WalletButton() {
   const vault = useVault();
@@ -29,19 +28,5 @@ export function WalletButton() {
     >
       {vault.isConnecting ? "Connecting…" : "Connect Wallet"}
     </button>
-  );
-}
-
-export function NetworkBanner() {
-  const vault = useVault();
-  if (!vault.isConnected || vault.isOnBase) return null;
-
-  return (
-    <div className="banner banner-warn network-banner">
-      Wrong network.{" "}
-      <button type="button" onClick={vault.switchToBase} className="banner-link">
-        {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
-      </button>
-    </div>
   );
 }

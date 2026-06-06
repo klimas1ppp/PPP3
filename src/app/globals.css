@@ -93,20 +93,174 @@ body::before {
 
 .page {
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 5rem 1.25rem 3rem;
+  padding: 5rem 1.25rem 4rem;
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 168, 83, 0.12), transparent),
     radial-gradient(ellipse 60% 40% at 80% 100%, rgba(212, 168, 83, 0.06), transparent),
     var(--color-ink);
 }
 
+.page-inner {
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* Hero */
+
+.hero {
+  text-align: center;
+}
+
+.hero-eyebrow {
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-gold-dim);
+  margin-bottom: 0.75rem;
+}
+
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  font-size: 0.9rem;
+  color: var(--color-mist);
+  line-height: 1.65;
+  margin-top: 0.85rem;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero-mission {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-gold);
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+/* Info sections */
+
+.info-section {
+  padding-top: 0.5rem;
+}
+
+.info-heading {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.info-lead {
+  font-size: 0.8rem;
+  color: var(--color-mist);
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+
+.steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.step {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(212, 168, 83, 0.12);
+  border: 1px solid rgba(212, 168, 83, 0.25);
+  color: var(--color-gold);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.step-title {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.step-body {
+  font-size: 0.75rem;
+  color: var(--color-mist);
+  line-height: 1.5;
+}
+
+.impact-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.impact-item {
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  padding: 0.55rem 0.65rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  line-height: 1.35;
+}
+
+/* Connect nudge */
+
+.connect-nudge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.85rem;
+  padding: 1.5rem 1rem;
+  background: var(--color-ink);
+  border: 1px dashed var(--color-border);
+  border-radius: 0.85rem;
+}
+
+.connect-nudge-icon {
+  color: var(--color-gold-dim);
+  opacity: 0.7;
+}
+
+.connect-nudge-text {
+  font-size: 0.82rem;
+  color: var(--color-mist);
+  line-height: 1.55;
+  max-width: 18rem;
+}
+
+.connect-nudge-hint {
+  font-size: 0.65rem;
+  color: var(--color-mist);
+  opacity: 0.7;
+}
+
 .vault-card {
   width: 100%;
-  max-width: 26rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1.25rem;
@@ -120,10 +274,6 @@ body::before {
   margin-bottom: 1.25rem;
 }
 
-.network-banner {
-  margin-bottom: 0.75rem;
-}
-
 .vault-eyebrow {
   font-size: 0.65rem;
   letter-spacing: 0.15em;
@@ -134,7 +284,7 @@ body::before {
 
 .vault-title {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 500;
   line-height: 1.25;
   letter-spacing: -0.02em;

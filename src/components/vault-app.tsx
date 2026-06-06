@@ -3,7 +3,6 @@
 import { VAULT } from "@/config";
 import { fmtAmount, fmtUsd, humanizeError, sanitizeAmount, toUnits, trimUnits } from "@/lib/format";
 import { useDeposit, useVault, useWithdraw, type TxPhase } from "@/hooks/use-vault";
-import { NetworkBanner } from "@/components/wallet-button";
 import { useState } from "react";
 
 export function VaultApp() {
@@ -15,21 +14,21 @@ export function VaultApp() {
   return (
     <div className="vault-card">
       <header className="vault-header">
-        <p className="vault-eyebrow">PoolTogether · Base</p>
-        <h1 className="vault-title">{VAULT.charityName}</h1>
+        <p className="vault-eyebrow">Charity Vault · {VAULT.chainName}</p>
+        <h2 className="vault-title">Deposit USDC</h2>
         <p className="vault-tagline">
-          Deposit USDC. Keep your principal. Yield goes to charity.
+          Charity without sacrifice — not a lottery, not a donation you can&apos;t get back.
         </p>
       </header>
 
       <StatsRow vault={vault} />
 
-      <NetworkBanner />
-
       {!canTransact ? (
         vault.isConnected && !vault.isOnBase ? (
           <SwitchNetworkButton />
-        ) : null
+        ) : (
+          <ConnectNudge />
+        )
       ) : (
         <>
           <div className="tab-row">
@@ -55,6 +54,32 @@ export function VaultApp() {
           View vault on BaseScan ↗
         </a>
       </footer>
+    </div>
+  );
+}
+
+function ConnectNudge() {
+  const vault = useVault();
+
+  return (
+    <div className="connect-nudge">
+      <div className="connect-nudge-icon" aria-hidden>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <p className="connect-nudge-text">
+        Connect your wallet to deposit USDC and put your savings to work for good — your principal stays fully yours.
+      </p>
+      <button
+        type="button"
+        className="btn-primary"
+        onClick={vault.connect}
+        disabled={vault.isConnecting}
+      >
+        {vault.isConnecting ? "Connecting…" : "Connect Wallet"}
+      </button>
+      <p className="connect-nudge-hint">Works with MetaMask, Coinbase Wallet, and others on Base.</p>
     </div>
   );
 }
