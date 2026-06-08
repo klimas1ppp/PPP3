@@ -2,12 +2,21 @@
 
 import { VAULT } from "@/config";
 import { fmtAmount, fmtUsd, humanizeError, sanitizeAmount, toUnits, trimUnits } from "@/lib/format";
-import { useDeposit, useVault, useWithdraw, type TxPhase, type VaultState } from "@/hooks/use-vault";
+import {
+  useDeposit,
+  useVault,
+  useWalletProfile,
+  useWithdraw,
+  type TxPhase,
+  type VaultState,
+} from "@/hooks/use-vault";
 import { useState } from "react";
 
 export function VaultApp() {
   const vault = useVault();
-  const deposit = useDeposit(vault);
+  const { profile } = useWalletProfile(vault.address, vault.isConnected);
+  const [payWithEth, setPayWithEth] = useState(false);
+  const deposit = useDeposit(vault, profile, payWithEth);
   const withdraw = useWithdraw(vault);
   const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
 
@@ -45,7 +54,7 @@ export function VaultApp() {
             ))}
           </div>
           {tab === "deposit" ? (
-            <DepositPanel vault={vault} deposit={deposit} />
+            <DepositPanel vault={vault} deposit={deposit} payWithEth={payWithEth} onPayWithEthChange={setPayWithEth} />
           ) : (
             <WithdrawPanel vault={vault} withdraw={withdraw} />
           )}
@@ -118,14 +127,20 @@ function Stat({ label, value, loading }: { label: string; value: string; loading
 function DepositPanel({
   vault,
   deposit,
+  payWithEth,
+  onPayWithEthChange,
 }: {
   vault: VaultState;
   deposit: ReturnType<typeof useDeposit>;
+  payWithEth: boolean;
+  onPayWithEthChange: (v: boolean) => void;
 }) {
   const [amount, setAmount] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const wei = toUnits(amount, VAULT.asset.decimals);
   const insufficient = wei > vault.walletBalance;
+  const showUsdcGas = deposit.willUseUsdcGas && !deposit.busy;
 
   return (
     <div className="form">
@@ -137,6 +152,9 @@ function DepositPanel({
         hint={`Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
         error={insufficient ? "Insufficient balance" : undefined}
       />
+      {(showUsdcGas || (deposit.state.gasPaidInUsdc && deposit.busy)) && (
+        <p className="gas-hint">Gas paid in USDC</p>
+      )}
       <TxStatus state={deposit.state} verb="Deposit" onDone={() => { setAmount(""); deposit.reset(); }} />
       <button
         type="button"
@@ -146,6 +164,26 @@ function DepositPanel({
       >
         {btnLabel(deposit.state.phase, "Deposit")}
       </button>
+      <div className="advanced">
+        <button
+          type="button"
+          className="advanced-toggle"
+          onClick={() => setShowAdvanced((v) => !v)}
+          aria-expanded={showAdvanced}
+        >
+          Advanced {showAdvanced ? "▾" : "▸"}
+        </button>
+        {showAdvanced && (
+          <label className="advanced-option">
+            <input
+              type="checkbox"
+              checked={payWithEth}
+              onChange={(e) => onPayWithEthChange(e.target.checked)}
+            />
+            Pay with ETH
+          </label>
+        )}
+      </div>
     </div>
   );
 }
@@ -223,7 +261,7 @@ function TxStatus({
   verb,
   onDone,
 }: {
-  state: { phase: TxPhase; error?: string; hash?: `0x${string}` };
+  state: { phase: TxPhase; error?: string; hash?: `0x${string}`; gasPaidInUsdc?: boolean };
   verb: string;
   onDone: () => void;
 }) {
@@ -241,7 +279,8 @@ function TxStatus({
   if (state.phase === "success") {
     return (
       <Banner tone="success">
-        {verb} confirmed.{" "}
+        {verb} confirmed.
+        {state.gasPaidInUsdc ? " Gas paid in USDC." : ""}{" "}
         {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="banner-link">view tx</a>}{" "}
         <button type="button" className="banner-link" onClick={onDone}>done</button>
       </Banner>
@@ -249,6 +288,7 @@ function TxStatus({
   }
 
   const msgs: Record<string, string> = {
+    "permit-signing": "Sign USDC permit in wallet…",
     approving: "Confirm approval in wallet…",
     "approve-confirming": "Approval confirming…",
     signing: `Confirm ${verb.toLowerCase()} in wallet…`,
@@ -268,6 +308,7 @@ function Banner({ tone, children }: { tone: "info" | "warn" | "error" | "success
 }
 
 function btnLabel(phase: TxPhase, verb: string) {
+  if (phase === "permit-signing") return "Sign permit…";
   if (phase === "approving") return "Approve in wallet…";
   if (phase === "approve-confirming") return "Approving…";
   if (phase === "signing") return "Confirm in wallet…";

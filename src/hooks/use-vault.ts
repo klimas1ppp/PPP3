@@ -13,7 +13,18 @@ import {
 import { maxUint256 } from "viem";
 import { VAULT } from "@/config";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
+import {
+  buildDepositBatchCalls,
+  createEip5792WalletClient,
+  sendDepositBatch,
+  waitForBatch,
+} from "@/lib/deposit-batch";
 import { humanizeError, toUnits } from "@/lib/format";
+import {
+  detectWalletProfile,
+  prefersUsdcGas,
+  type WalletDepositProfile,
+} from "@/lib/wallet-profile";
 
 export type VaultState = ReturnType<typeof useVault>;
 
@@ -26,6 +37,7 @@ async function refreshWithRetry(refetch: () => Promise<unknown>) {
 
 export type TxPhase =
   | "idle"
+  | "permit-signing"
   | "approving"
   | "approve-confirming"
   | "signing"
@@ -33,7 +45,42 @@ export type TxPhase =
   | "success"
   | "error";
 
-type ActionState = { phase: TxPhase; error?: string; hash?: `0x${string}` };
+type ActionState = {
+  phase: TxPhase;
+  error?: string;
+  hash?: `0x${string}`;
+  batchId?: string;
+  gasPaidInUsdc?: boolean;
+};
+
+export function useWalletProfile(address: `0x${string}` | undefined, isConnected: boolean) {
+  const [profile, setProfile] = useState<WalletDepositProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!address || !isConnected) {
+      setProfile(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    void detectWalletProfile(address)
+      .then((p) => {
+        if (!cancelled) setProfile(p);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address, isConnected]);
+
+  return { profile, loading };
+}
 
 export function useVault() {
   const { address, isConnected: wagmiConnected, chainId, status } = useAccount();
@@ -133,18 +180,24 @@ function useTxConfirm(
 
 type VaultTxInput = Pick<VaultState, "address" | "allowance" | "deposited" | "refreshBalances">;
 
-export function useDeposit(vault: VaultTxInput) {
+export function useDeposit(
+  vault: VaultTxInput,
+  profile: WalletDepositProfile | null,
+  payWithEth: boolean
+) {
   const [state, setState] = useState<ActionState>({ phase: "idle" });
   const pendingAmount = useRef<string | null>(null);
   const { writeContractAsync } = useWriteContract();
   const { isSuccess, isLoading } = useWaitForTransactionReceipt({ hash: state.hash });
 
-  const submitDeposit = useCallback(
+  const useUsdcPath = prefersUsdcGas(profile, payWithEth);
+
+  const submitDepositEth = useCallback(
     async (amount: string) => {
       if (!vault.address) return;
       const wei = toUnits(amount, VAULT.asset.decimals);
       if (wei <= 0n) return;
-      setState({ phase: "signing" });
+      setState({ phase: "signing", gasPaidInUsdc: false });
       try {
         const hash = await writeContractAsync({
           address: VAULT.address,
@@ -152,7 +205,7 @@ export function useDeposit(vault: VaultTxInput) {
           functionName: "deposit",
           args: [wei, vault.address],
         });
-        setState({ phase: "pending", hash });
+        setState({ phase: "pending", hash, gasPaidInUsdc: false });
       } catch (e) {
         setState({ phase: "error", error: humanizeError(e) });
       }
@@ -160,11 +213,11 @@ export function useDeposit(vault: VaultTxInput) {
     [vault.address, writeContractAsync]
   );
 
-  const submitApprove = useCallback(
+  const submitApproveEth = useCallback(
     async (amount: string) => {
       if (!vault.address) return;
       pendingAmount.current = amount;
-      setState({ phase: "approving" });
+      setState({ phase: "approving", gasPaidInUsdc: false });
       try {
         const hash = await writeContractAsync({
           address: VAULT.asset.address,
@@ -172,7 +225,7 @@ export function useDeposit(vault: VaultTxInput) {
           functionName: "approve",
           args: [VAULT.address, maxUint256],
         });
-        setState({ phase: "approve-confirming", hash });
+        setState({ phase: "approve-confirming", hash, gasPaidInUsdc: false });
       } catch (e) {
         pendingAmount.current = null;
         setState({ phase: "error", error: humanizeError(e) });
@@ -181,18 +234,83 @@ export function useDeposit(vault: VaultTxInput) {
     [vault.address, writeContractAsync]
   );
 
-  const deposit = useCallback(
+  const depositEth = useCallback(
     async (amount: string) => {
       if (!vault.address) return;
       const wei = toUnits(amount, VAULT.asset.decimals);
       if (wei <= 0n) return;
       if (vault.allowance < wei) {
-        await submitApprove(amount);
+        await submitApproveEth(amount);
       } else {
-        await submitDeposit(amount);
+        await submitDepositEth(amount);
       }
     },
-    [vault.address, vault.allowance, submitApprove, submitDeposit]
+    [vault.address, vault.allowance, submitApproveEth, submitDepositEth]
+  );
+
+  const depositUsdc = useCallback(
+    async (amount: string) => {
+      if (!vault.address || !profile) return;
+      const wei = toUnits(amount, VAULT.asset.decimals);
+      if (wei <= 0n) return;
+
+      const needsAuth = vault.allowance < wei;
+      if (needsAuth) setState({ phase: "permit-signing", gasPaidInUsdc: true });
+      else setState({ phase: "signing", gasPaidInUsdc: true });
+
+      try {
+        const walletClient = await createEip5792WalletClient(vault.address);
+        const { calls, usedPermit } = await buildDepositBatchCalls({
+          walletClient,
+          address: vault.address,
+          amount: wei,
+          allowance: vault.allowance,
+          preferPermit: true,
+        });
+
+        if (usedPermit && needsAuth) setState({ phase: "signing", gasPaidInUsdc: true });
+
+        const { batchId } = await sendDepositBatch({
+          address: vault.address,
+          calls,
+          profile,
+          useUsdcGas: true,
+        });
+
+        setState({ phase: "pending", batchId, gasPaidInUsdc: true });
+        const txHash = await waitForBatch(batchId, vault.address);
+        setState({
+          phase: "success",
+          hash: txHash,
+          batchId,
+          gasPaidInUsdc: true,
+        });
+        vault.refreshBalances();
+      } catch (e) {
+        // Wallet may not support batch/USDC gas — fall back to standard ETH txs
+        if (!payWithEth) {
+          try {
+            await depositEth(amount);
+            return;
+          } catch {
+            // keep original error if ETH path also fails
+          }
+        }
+        setState({ phase: "error", error: humanizeError(e), gasPaidInUsdc: true });
+      }
+    },
+    [vault.address, vault.allowance, vault.refreshBalances, profile, payWithEth, depositEth]
+  );
+
+  const deposit = useCallback(
+    async (amount: string) => {
+      if (useUsdcPath && profile) {
+        await depositUsdc(amount);
+      } else {
+        await depositEth(amount);
+      }
+    },
+    [useUsdcPath, profile, depositUsdc, depositEth]
   );
 
   useEffect(() => {
@@ -202,16 +320,16 @@ export function useDeposit(vault: VaultTxInput) {
       const amount = pendingAmount.current;
       pendingAmount.current = null;
       vault.refreshBalances();
-      if (amount) void submitDeposit(amount);
+      if (amount) void submitDepositEth(amount);
       else setState({ phase: "idle" });
       return;
     }
 
-    if (state.phase === "pending") {
-      setState({ phase: "success", hash: state.hash });
+    if (state.phase === "pending" && !state.batchId) {
+      setState((s) => ({ ...s, phase: "success" }));
       vault.refreshBalances();
     }
-  }, [state.hash, state.phase, isLoading, isSuccess, submitDeposit, vault.refreshBalances]);
+  }, [state.hash, state.phase, state.batchId, isLoading, isSuccess, submitDepositEth, vault.refreshBalances]);
 
   const reset = useCallback(() => {
     pendingAmount.current = null;
@@ -219,7 +337,13 @@ export function useDeposit(vault: VaultTxInput) {
   }, []);
   const busy = state.phase !== "idle" && state.phase !== "success" && state.phase !== "error";
 
-  return { state, deposit, reset, busy };
+  return {
+    state,
+    deposit,
+    reset,
+    busy,
+    willUseUsdcGas: useUsdcPath,
+  };
 }
 
 export function useWithdraw(vault: VaultTxInput) {

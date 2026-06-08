@@ -468,6 +468,44 @@ body::before {
   cursor: not-allowed;
 }
 
+.gas-hint {
+  font-size: 0.7rem;
+  color: var(--color-gold);
+  margin-top: -0.25rem;
+}
+
+.advanced {
+  margin-top: 0.25rem;
+}
+
+.advanced-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-mist);
+  font-size: 0.68rem;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.advanced-toggle:hover {
+  color: var(--color-paper);
+}
+
+.advanced-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  cursor: pointer;
+}
+
+.advanced-option input {
+  accent-color: var(--color-gold);
+}
+
 .banner {
   padding: 0.65rem 0.75rem;
   border-radius: 0.6rem;
