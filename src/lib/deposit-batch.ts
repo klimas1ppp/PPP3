@@ -2,17 +2,16 @@ import {
   createWalletClient,
   custom,
   encodeFunctionData,
-  maxUint256,
   type Address,
   type Hex,
-  type WalletClient,
 } from "viem";
 import { base } from "viem/chains";
 import { eip5792Actions } from "viem/experimental";
 import { VAULT } from "@/config";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
-import { buildPermitCall, type EncodedCall } from "@/lib/usdc-permit";
 import { getWalletProvider, type WalletDepositProfile } from "@/lib/wallet-profile";
+
+export type EncodedCall = { to: Address; value: Hex; data: Hex };
 
 export async function createEip5792WalletClient(address: Address) {
   const provider = await getWalletProvider();
@@ -23,14 +22,14 @@ export async function createEip5792WalletClient(address: Address) {
   }).extend(eip5792Actions());
 }
 
-function buildApproveCall(spender: Address): EncodedCall {
+function buildApproveCall(spender: Address, amount: bigint): EncodedCall {
   return {
     to: VAULT.asset.address,
     value: "0x0",
     data: encodeFunctionData({
       abi: erc20Abi,
       functionName: "approve",
-      args: [spender, maxUint256],
+      args: [spender, amount],
     }),
   };
 }
@@ -47,42 +46,29 @@ function buildDepositCall(amount: bigint, receiver: Address): EncodedCall {
   };
 }
 
-export async function buildDepositBatchCalls({
-  walletClient,
+/** Approve (exact amount) + deposit batched when allowance is insufficient. */
+export function buildDepositBatchCalls({
   address,
   amount,
   allowance,
-  preferPermit,
 }: {
-  walletClient: WalletClient;
   address: Address;
   amount: bigint;
   allowance: bigint;
-  preferPermit: boolean;
-}): Promise<{ calls: EncodedCall[]; usedPermit: boolean }> {
+}): EncodedCall[] {
   const calls: EncodedCall[] = [];
-  let usedPermit = false;
 
   if (allowance < amount) {
-    if (preferPermit) {
-      try {
-        calls.push(await buildPermitCall(walletClient, address, VAULT.address));
-        usedPermit = true;
-      } catch {
-        calls.push(buildApproveCall(VAULT.address));
-      }
-    } else {
-      calls.push(buildApproveCall(VAULT.address));
-    }
+    calls.push(buildApproveCall(VAULT.address, amount));
   }
 
   calls.push(buildDepositCall(amount, address));
-  return { calls, usedPermit };
+  return calls;
 }
 
-type SendBatchResult = { batchId: string; txHash?: Hex };
+type SendBatchResult = { batchId: string };
 
-/** Batch deposit via wallet_sendCalls — vault.deposit called directly, no middleware contracts. */
+/** Batch via wallet_sendCalls — vault.deposit called directly, no middleware contracts. */
 export async function sendDepositBatch({
   address,
   calls,
@@ -104,7 +90,6 @@ export async function sendDepositBatch({
   };
 
   if (useUsdcGas) {
-    // Wallet-native USDC gas — Base Account / Rabby pick their own paymaster; no app URL
     (sendParams as { capabilities?: Record<string, unknown> }).capabilities = {
       paymasterService: {
         context: { erc20: VAULT.asset.address },

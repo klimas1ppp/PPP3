@@ -10,12 +10,10 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { maxUint256 } from "viem";
 import { VAULT } from "@/config";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
 import {
   buildDepositBatchCalls,
-  createEip5792WalletClient,
   sendDepositBatch,
   waitForBatch,
 } from "@/lib/deposit-batch";
@@ -37,7 +35,6 @@ async function refreshWithRetry(refetch: () => Promise<unknown>) {
 
 export type TxPhase =
   | "idle"
-  | "permit-signing"
   | "approving"
   | "approve-confirming"
   | "signing"
@@ -216,6 +213,8 @@ export function useDeposit(
   const submitApproveEth = useCallback(
     async (amount: string) => {
       if (!vault.address) return;
+      const wei = toUnits(amount, VAULT.asset.decimals);
+      if (wei <= 0n) return;
       pendingAmount.current = amount;
       setState({ phase: "approving", gasPaidInUsdc: false });
       try {
@@ -223,7 +222,7 @@ export function useDeposit(
           address: VAULT.asset.address,
           abi: erc20Abi,
           functionName: "approve",
-          args: [VAULT.address, maxUint256],
+          args: [VAULT.address, wei],
         });
         setState({ phase: "approve-confirming", hash, gasPaidInUsdc: false });
       } catch (e) {
@@ -234,7 +233,45 @@ export function useDeposit(
     [vault.address, writeContractAsync]
   );
 
-  const depositEth = useCallback(
+  const depositBatch = useCallback(
+    async (amount: string, useUsdcGas: boolean) => {
+      if (!vault.address || !profile) return;
+      const wei = toUnits(amount, VAULT.asset.decimals);
+      if (wei <= 0n) return;
+
+      const needsApprove = vault.allowance < wei;
+      setState({
+        phase: needsApprove ? "approving" : "signing",
+        gasPaidInUsdc: useUsdcGas,
+      });
+
+      const calls = buildDepositBatchCalls({
+        address: vault.address,
+        amount: wei,
+        allowance: vault.allowance,
+      });
+
+      const { batchId } = await sendDepositBatch({
+        address: vault.address,
+        calls,
+        profile,
+        useUsdcGas,
+      });
+
+      setState({ phase: "pending", batchId, gasPaidInUsdc: useUsdcGas });
+      const txHash = await waitForBatch(batchId, vault.address);
+      setState({
+        phase: "success",
+        hash: txHash,
+        batchId,
+        gasPaidInUsdc: useUsdcGas,
+      });
+      vault.refreshBalances();
+    },
+    [vault.address, vault.allowance, vault.refreshBalances, profile]
+  );
+
+  const depositEthSequential = useCallback(
     async (amount: string) => {
       if (!vault.address) return;
       const wei = toUnits(amount, VAULT.asset.decimals);
@@ -248,46 +285,26 @@ export function useDeposit(
     [vault.address, vault.allowance, submitApproveEth, submitDepositEth]
   );
 
+  const depositEth = useCallback(
+    async (amount: string) => {
+      if (profile?.supportsSendCalls) {
+        try {
+          await depositBatch(amount, false);
+          return;
+        } catch {
+          // Wallet batch unsupported — fall back to separate approve + deposit txs
+        }
+      }
+      await depositEthSequential(amount);
+    },
+    [profile?.supportsSendCalls, depositBatch, depositEthSequential]
+  );
+
   const depositUsdc = useCallback(
     async (amount: string) => {
-      if (!vault.address || !profile) return;
-      const wei = toUnits(amount, VAULT.asset.decimals);
-      if (wei <= 0n) return;
-
-      const needsAuth = vault.allowance < wei;
-      if (needsAuth) setState({ phase: "permit-signing", gasPaidInUsdc: true });
-      else setState({ phase: "signing", gasPaidInUsdc: true });
-
       try {
-        const walletClient = await createEip5792WalletClient(vault.address);
-        const { calls, usedPermit } = await buildDepositBatchCalls({
-          walletClient,
-          address: vault.address,
-          amount: wei,
-          allowance: vault.allowance,
-          preferPermit: true,
-        });
-
-        if (usedPermit && needsAuth) setState({ phase: "signing", gasPaidInUsdc: true });
-
-        const { batchId } = await sendDepositBatch({
-          address: vault.address,
-          calls,
-          profile,
-          useUsdcGas: true,
-        });
-
-        setState({ phase: "pending", batchId, gasPaidInUsdc: true });
-        const txHash = await waitForBatch(batchId, vault.address);
-        setState({
-          phase: "success",
-          hash: txHash,
-          batchId,
-          gasPaidInUsdc: true,
-        });
-        vault.refreshBalances();
+        await depositBatch(amount, true);
       } catch (e) {
-        // Wallet may not support batch/USDC gas — fall back to standard ETH txs
         if (!payWithEth) {
           try {
             await depositEth(amount);
@@ -299,7 +316,7 @@ export function useDeposit(
         setState({ phase: "error", error: humanizeError(e), gasPaidInUsdc: true });
       }
     },
-    [vault.address, vault.allowance, vault.refreshBalances, profile, payWithEth, depositEth]
+    [depositBatch, depositEth, payWithEth]
   );
 
   const deposit = useCallback(

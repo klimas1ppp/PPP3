@@ -288,8 +288,7 @@ function TxStatus({
   }
 
   const msgs: Record<string, string> = {
-    "permit-signing": "Sign USDC permit in wallet…",
-    approving: "Confirm approval in wallet…",
+    approving: "Confirm approve + deposit in wallet…",
     "approve-confirming": "Approval confirming…",
     signing: `Confirm ${verb.toLowerCase()} in wallet…`,
     pending: "Transaction confirming…",
@@ -308,7 +307,6 @@ function Banner({ tone, children }: { tone: "info" | "warn" | "error" | "success
 }
 
 function btnLabel(phase: TxPhase, verb: string) {
-  if (phase === "permit-signing") return "Sign permit…";
   if (phase === "approving") return "Approve in wallet…";
   if (phase === "approve-confirming") return "Approving…";
   if (phase === "signing") return "Confirm in wallet…";
