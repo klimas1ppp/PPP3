@@ -1,6 +1,6 @@
 "use client";
 
-import { getConnectorClient } from "@wagmi/core";
+import { getAccount, getConnectorClient } from "@wagmi/core";
 import type { Address, EIP1193Provider } from "viem";
 import { VAULT } from "@/config";
 import { wagmiConfig } from "@/components/providers";
@@ -20,18 +20,42 @@ type ChainCapabilities = {
 };
 
 export async function getWalletProvider(): Promise<EIP1193Provider & { isRabby?: boolean }> {
+  try {
+    const connectorClient = await getConnectorClient(wagmiConfig, { chainId: VAULT.chainId });
+    const transport = connectorClient.transport as { value?: EIP1193Provider };
+    if (transport.value) return transport.value as EIP1193Provider & { isRabby?: boolean };
+  } catch {
+    // fall through to window.ethereum
+  }
   if (typeof window !== "undefined" && window.ethereum) {
     return window.ethereum;
   }
-  const connectorClient = await getConnectorClient(wagmiConfig, { chainId: VAULT.chainId });
-  const transport = connectorClient.transport as { value?: EIP1193Provider };
-  if (transport.value) return transport.value as EIP1193Provider & { isRabby?: boolean };
   throw new Error("No wallet provider found");
 }
 
 function isAtomicSupported(caps?: ChainCapabilities): boolean {
   const atomic = caps?.atomic;
   return atomic?.status === "supported" || atomic?.supported === true || atomic?.supported === "supported";
+}
+
+function detectRabby(provider: EIP1193Provider & { isRabby?: boolean }): boolean {
+  if (provider.isRabby) return true;
+
+  const account = getAccount(wagmiConfig);
+  const connectorId = account.connector?.id?.toLowerCase() ?? "";
+  const connectorName = account.connector?.name?.toLowerCase() ?? "";
+  if (connectorId.includes("rabby") || connectorName.includes("rabby")) return true;
+
+  if (typeof window !== "undefined") {
+    const eth = window.ethereum as {
+      isRabby?: boolean;
+      providers?: Array<{ isRabby?: boolean }>;
+    };
+    if (eth?.isRabby) return true;
+    if (eth?.providers?.some((p) => p.isRabby)) return true;
+  }
+
+  return false;
 }
 
 export async function detectWalletProfile(address: Address): Promise<WalletDepositProfile> {
@@ -47,7 +71,7 @@ export async function detectWalletProfile(address: Address): Promise<WalletDepos
     };
   }
 
-  const isRabby = Boolean(provider.isRabby);
+  const isRabby = detectRabby(provider);
 
   try {
     const raw = (await provider.request({
@@ -63,7 +87,6 @@ export async function detectWalletProfile(address: Address): Promise<WalletDepos
       isRabby,
       supportsSendCalls: true,
       supportsAtomicBatch: isAtomicSupported(baseCaps) || isAtomicSupported(globalCaps),
-      // Rabby GasAccount + smart wallets advertising ERC-7677 paymaster on Base
       supportsUsdcGas: paymasterSupported || isRabby,
     };
   } catch {
@@ -76,10 +99,21 @@ export async function detectWalletProfile(address: Address): Promise<WalletDepos
   }
 }
 
+/** Rabby GasAccount — user picks USDC gas at sign time on a single tx. */
 export function prefersUsdcGas(
   profile: WalletDepositProfile | null | undefined,
   payWithEth: boolean
 ): boolean {
   if (payWithEth || !profile) return false;
-  return profile.supportsUsdcGas && profile.supportsSendCalls;
+  return profile.isRabby;
+}
+
+export function depositGasHint(
+  profile: WalletDepositProfile | null | undefined,
+  useUsdcPath: boolean
+): string | null {
+  if (!useUsdcPath || !profile) return null;
+  if (profile.supportsSendCalls && profile.supportsUsdcGas) return "Gas paid in USDC";
+  if (profile.isRabby) return "Select GasAccount in Rabby to pay gas in USDC";
+  return null;
 }

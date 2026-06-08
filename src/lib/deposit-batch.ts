@@ -4,11 +4,13 @@ import {
   encodeFunctionData,
   type Address,
   type Hex,
+  type WalletClient,
 } from "viem";
 import { base } from "viem/chains";
 import { eip5792Actions } from "viem/experimental";
 import { VAULT } from "@/config";
-import { erc20Abi, vaultAbi } from "@/lib/abi";
+import { vaultAbi } from "@/lib/abi";
+import { signUsdcPermit, type PermitSig } from "@/lib/usdc-permit";
 import { getWalletProvider, type WalletDepositProfile } from "@/lib/wallet-profile";
 
 export type EncodedCall = { to: Address; value: Hex; data: Hex };
@@ -20,18 +22,6 @@ export async function createEip5792WalletClient(address: Address) {
     chain: base,
     transport: custom(provider),
   }).extend(eip5792Actions());
-}
-
-function buildApproveCall(spender: Address, amount: bigint): EncodedCall {
-  return {
-    to: VAULT.asset.address,
-    value: "0x0",
-    data: encodeFunctionData({
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [spender, amount],
-    }),
-  };
 }
 
 function buildDepositCall(amount: bigint, receiver: Address): EncodedCall {
@@ -46,29 +36,47 @@ function buildDepositCall(amount: bigint, receiver: Address): EncodedCall {
   };
 }
 
-/** Approve (exact amount) + deposit batched when allowance is insufficient. */
-export function buildDepositBatchCalls({
+function buildDepositWithPermitCall(
+  amount: bigint,
+  receiver: Address,
+  sig: PermitSig
+): EncodedCall {
+  return {
+    to: VAULT.address,
+    value: "0x0",
+    data: encodeFunctionData({
+      abi: vaultAbi,
+      functionName: "depositWithPermit",
+      args: [amount, receiver, sig.deadline, sig.v, sig.r, sig.s],
+    }),
+  };
+}
+
+/**
+ * One vault call when possible: depositWithPermit (permit + deposit) or deposit().
+ * Avoids approve+deposit split that breaks USDC-gas wallets on the second tx.
+ */
+export async function buildDepositCalls({
+  walletClient,
   address,
   amount,
   allowance,
 }: {
+  walletClient: WalletClient;
   address: Address;
   amount: bigint;
   allowance: bigint;
-}): EncodedCall[] {
-  const calls: EncodedCall[] = [];
-
-  if (allowance < amount) {
-    calls.push(buildApproveCall(VAULT.address, amount));
+}): Promise<EncodedCall[]> {
+  if (allowance >= amount) {
+    return [buildDepositCall(amount, address)];
   }
 
-  calls.push(buildDepositCall(amount, address));
-  return calls;
+  const sig = await signUsdcPermit(walletClient, address, VAULT.address, amount);
+  return [buildDepositWithPermitCall(amount, address, sig)];
 }
 
 type SendBatchResult = { batchId: string };
 
-/** Batch via wallet_sendCalls — vault.deposit called directly, no middleware contracts. */
 export async function sendDepositBatch({
   address,
   calls,
@@ -84,8 +92,9 @@ export async function sendDepositBatch({
 
   const sendParams: Parameters<typeof walletClient.sendCalls>[0] = {
     account: address,
-    calls: calls.map((c) => ({ to: c.to, value: 0n, data: c.data })),
-    version: "1.0",
+    chain: base,
+    calls: calls.map((c) => ({ to: c.to, data: c.data })),
+    experimental_fallback: true,
     forceAtomic: calls.length > 1 && profile.supportsAtomicBatch,
   };
 

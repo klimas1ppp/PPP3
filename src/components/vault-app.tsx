@@ -156,9 +156,9 @@ function DepositPanel({
       {gasBlocker && !insufficient && wei > 0n && (
         <Banner tone="warn">{gasBlocker}</Banner>
       )}
-      {(deposit.willUseUsdcGas && !deposit.busy) || (deposit.state.gasPaidInUsdc && deposit.busy) ? (
-        <p className="gas-hint">Gas paid in USDC</p>
-      ) : null}
+      {deposit.gasHint && !deposit.busy && (
+        <p className="gas-hint">{deposit.gasHint}</p>
+      )}
       <TxStatus state={deposit.state} verb="Deposit" onDone={() => { deposit.reset(); }} />
       <button
         type="button"
@@ -323,8 +323,6 @@ function TxStatus({
   }
 
   const msgs: Record<string, string> = {
-    approving: "Confirm approve + deposit in wallet…",
-    "approve-confirming": "Approval confirming…",
     signing: `Confirm ${verb.toLowerCase()} in wallet…`,
     pending: "Transaction confirming…",
   };
@@ -342,8 +340,6 @@ function Banner({ tone, children }: { tone: "info" | "warn" | "error" | "success
 }
 
 function btnLabel(phase: TxPhase, verb: string) {
-  if (phase === "approving") return "Approve in wallet…";
-  if (phase === "approve-confirming") return "Approving…";
   if (phase === "signing") return "Confirm in wallet…";
   if (phase === "pending") return `${verb}ing…`;
   if (phase === "success") return "Done ✓";

@@ -20,8 +20,10 @@ export function resolveDepositRoute(
   payWithEth: boolean,
   useUsdcPath: boolean
 ): DepositRoute {
-  if (useUsdcPath && profile?.supportsSendCalls) return "usdc-batch";
-  if (profile?.supportsSendCalls) return "eth-batch";
+  // Standard MetaMask / Rabby: single-tx deposit or depositWithPermit
+  if (!profile?.supportsSendCalls || profile.isRabby) return "eth-sequential";
+  // Base Smart Account USDC gas via EIP-5792 (not standard EOA MetaMask)
+  if (useUsdcPath && profile.supportsUsdcGas) return "usdc-batch";
   return "eth-sequential";
 }
 
@@ -36,7 +38,7 @@ function humanizeSimError(err: unknown): string {
     return "Unable to simulate transaction. Please try again.";
   }
   if (/insufficient funds/i.test(line)) {
-    return "Not enough ETH on Base for gas fees. Add a small amount of ETH, or use a wallet that supports paying gas in USDC.";
+    return "Not enough ETH on Base for gas. Add a small amount of ETH, or pay gas in USDC via your wallet if supported.";
   }
   if (/exceeds balance|insufficient balance|transfer amount exceeds/i.test(line)) {
     return "Insufficient USDC balance.";
@@ -56,18 +58,22 @@ export function syncDepositBlocker({
   walletBalance,
   ethBalance,
   route,
+  profile,
 }: {
   amount: bigint;
   walletBalance: bigint;
   ethBalance: bigint;
   route: DepositRoute;
+  profile?: WalletDepositProfile | null;
 }): string | null {
   if (amount <= 0n) return null;
   if (amount > walletBalance) return "Insufficient USDC balance.";
 
-  const needsEth = route === "eth-batch" || route === "eth-sequential";
+  const needsEth = route === "eth-sequential";
   if (needsEth && ethBalance < MIN_ETH_FOR_GAS) {
-    return "Not enough ETH on Base for gas. Add a small amount of ETH, or use a wallet that supports paying gas in USDC (e.g. Coinbase Wallet, Rabby).";
+    // Rabby GasAccount covers gas at sign time — don't block the deposit button
+    if (profile?.isRabby) return null;
+    return "Not enough ETH on Base for gas. Add a small amount of ETH to continue.";
   }
 
   return null;
@@ -82,14 +88,7 @@ async function simulateDepositSteps(
   const needsApprove = allowance < amount;
 
   if (needsApprove) {
-    await simulateContract(publicClient, {
-      account: address,
-      address: VAULT.asset.address,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [VAULT.address, amount],
-    });
-    // Allowance is set in the batched/sequential approve tx before deposit runs.
+    // depositWithPermit bundles permit + deposit — no separate approve tx to simulate.
     return;
   }
 
@@ -110,6 +109,7 @@ export async function preflightDeposit({
   walletBalance,
   ethBalance,
   route,
+  profile,
 }: {
   address: Address;
   amount: bigint;
@@ -117,8 +117,9 @@ export async function preflightDeposit({
   walletBalance: bigint;
   ethBalance: bigint;
   route: DepositRoute;
+  profile?: WalletDepositProfile | null;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
-  const sync = syncDepositBlocker({ amount, walletBalance, ethBalance, route });
+  const sync = syncDepositBlocker({ amount, walletBalance, ethBalance, route, profile });
   if (sync) return { ok: false, message: sync };
 
   try {

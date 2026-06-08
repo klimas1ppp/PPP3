@@ -51,6 +51,9 @@ export function humanizeError(err: unknown): string {
     "Transaction failed.";
   const first = msg.split("\n")[0];
   if (/user rejected|denied/i.test(first)) return "You cancelled the request.";
+  if (/missing or invalid parameters/i.test(first)) {
+    return "Wallet rejected the request. Try again, or use Advanced → Pay with ETH.";
+  }
   if (/insufficient funds/i.test(first)) return "Not enough ETH for gas.";
   if (/exceeds balance|insufficient/i.test(first)) return "Insufficient balance.";
   return first.length > 120 ? `${first.slice(0, 117)}…` : first;
