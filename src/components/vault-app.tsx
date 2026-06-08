@@ -140,7 +140,8 @@ function DepositPanel({
 
   const wei = toUnits(amount, VAULT.asset.decimals);
   const insufficient = wei > vault.walletBalance;
-  const showUsdcGas = deposit.willUseUsdcGas && !deposit.busy;
+  const gasBlocker = deposit.depositBlocker(amount);
+  const blocked = insufficient || Boolean(gasBlocker);
 
   return (
     <div className="form">
@@ -152,15 +153,31 @@ function DepositPanel({
         hint={`Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
         error={insufficient ? "Insufficient balance" : undefined}
       />
-      {(showUsdcGas || (deposit.state.gasPaidInUsdc && deposit.busy)) && (
-        <p className="gas-hint">Gas paid in USDC</p>
+      {gasBlocker && !insufficient && wei > 0n && (
+        <Banner tone="warn">{gasBlocker}</Banner>
       )}
-      <TxStatus state={deposit.state} verb="Deposit" onDone={() => { setAmount(""); deposit.reset(); }} />
+      {(deposit.willUseUsdcGas && !deposit.busy) || (deposit.state.gasPaidInUsdc && deposit.busy) ? (
+        <p className="gas-hint">Gas paid in USDC</p>
+      ) : null}
+      <TxStatus state={deposit.state} verb="Deposit" onDone={() => { deposit.reset(); }} />
       <button
         type="button"
         className="btn-primary"
-        disabled={wei <= 0n || insufficient || deposit.busy}
-        onClick={() => deposit.deposit(amount)}
+        disabled={
+          deposit.state.phase === "success"
+            ? false
+            : wei <= 0n || blocked || deposit.busy
+        }
+        onClick={() => {
+          if (deposit.state.phase === "success") {
+            deposit.reset();
+            return;
+          }
+          if (deposit.busy || wei <= 0n || blocked) return;
+          const value = amount;
+          setAmount("");
+          void deposit.deposit(value);
+        }}
       >
         {btnLabel(deposit.state.phase, "Deposit")}
       </button>
@@ -210,8 +227,26 @@ function WithdrawPanel({
         hint={`Deposited: ${fmtAmount(vault.deposited, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
         error={insufficient ? "Exceeds your deposit" : undefined}
       />
-      <TxStatus state={withdraw.state} verb="Withdraw" onDone={() => { setAmount(""); withdraw.reset(); }} />
-      <button type="button" className="btn-primary" disabled={wei <= 0n || insufficient || withdraw.busy} onClick={() => withdraw.withdraw(amount)}>
+      <TxStatus state={withdraw.state} verb="Withdraw" onDone={() => { withdraw.reset(); }} />
+      <button
+        type="button"
+        className="btn-primary"
+        disabled={
+          withdraw.state.phase === "success"
+            ? false
+            : wei <= 0n || insufficient || withdraw.busy
+        }
+        onClick={() => {
+          if (withdraw.state.phase === "success") {
+            withdraw.reset();
+            return;
+          }
+          if (withdraw.busy || wei <= 0n || insufficient) return;
+          const value = amount;
+          setAmount("");
+          void withdraw.withdraw(value);
+        }}
+      >
         {btnLabel(withdraw.state.phase, "Withdraw")}
       </button>
     </div>

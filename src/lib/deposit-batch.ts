@@ -103,11 +103,3 @@ export async function sendDepositBatch({
 
   return { batchId };
 }
-
-export async function waitForBatch(batchId: string, address: Address): Promise<Hex | undefined> {
-  const walletClient = await createEip5792WalletClient(address);
-  const status = await walletClient.waitForCallsStatus({ id: batchId, timeout: 120_000 });
-
-  const receipt = status.receipts?.[status.receipts.length - 1];
-  return receipt?.transactionHash;
-}

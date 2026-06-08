@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useAccount,
+  useBalance,
   useConnect,
   useDisconnect,
   useReadContracts,
   useSwitchChain,
-  useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 import { VAULT } from "@/config";
@@ -15,8 +15,13 @@ import { erc20Abi, vaultAbi } from "@/lib/abi";
 import {
   buildDepositBatchCalls,
   sendDepositBatch,
-  waitForBatch,
 } from "@/lib/deposit-batch";
+import { confirmBatch, peekBatchTxHash, waitForTxHash } from "@/lib/confirm-tx";
+import {
+  preflightDeposit,
+  resolveDepositRoute,
+  syncDepositBlocker,
+} from "@/lib/deposit-preflight";
 import { humanizeError, toUnits } from "@/lib/format";
 import {
   detectWalletProfile,
@@ -121,6 +126,12 @@ export function useVault() {
   const allowance = (stableAddress ? data?.[2]?.result : 0n) as bigint;
   const deposited = (stableAddress ? data?.[3]?.result : 0n) as bigint;
 
+  const { data: ethBalData } = useBalance({
+    address: stableAddress,
+    chainId: VAULT.chainId,
+  });
+  const ethBalance = ethBalData?.value ?? 0n;
+
   const refreshBalances = useCallback(() => {
     void refreshWithRetry(refetch);
   }, [refetch]);
@@ -148,6 +159,7 @@ export function useVault() {
     walletBalance,
     allowance,
     deposited,
+    ethBalance,
     isLoading,
     refetch,
     refreshBalances,
@@ -160,22 +172,54 @@ function useTxConfirm(
   onConfirmed: () => void,
   successPhase: TxPhase = "success"
 ) {
-  const { isSuccess, isLoading } = useWaitForTransactionReceipt({ hash: state.hash });
+  useEffect(() => {
+    if (state.phase !== "approve-confirming" || !state.hash) return;
+
+    let cancelled = false;
+    void waitForTxHash(state.hash)
+      .then(() => {
+        if (cancelled) return;
+        setState({ phase: "idle" });
+        onConfirmed();
+      })
+      .catch(() => {
+        if (!cancelled) setState({ phase: "error", error: "Approval confirmation timed out." });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.hash, state.phase, setState, onConfirmed]);
 
   useEffect(() => {
-    if (!state.hash || isLoading || !isSuccess) return;
+    if (state.phase !== "pending" || !state.hash || state.batchId) return;
 
-    if (state.phase === "approve-confirming") {
-      setState({ phase: "idle" });
-      onConfirmed();
-    } else if (state.phase === "pending") {
-      setState({ phase: successPhase, hash: state.hash });
-      onConfirmed();
-    }
-  }, [state.hash, state.phase, isLoading, isSuccess, setState, onConfirmed, successPhase]);
+    let cancelled = false;
+    void waitForTxHash(state.hash)
+      .then(() => {
+        if (cancelled) return;
+        setState({ phase: successPhase, hash: state.hash });
+        onConfirmed();
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setState({
+            phase: "error",
+            error: "Transaction confirmation timed out. Check the explorer — if it succeeded, refresh the page.",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.hash, state.phase, state.batchId, setState, onConfirmed, successPhase]);
 }
 
-type VaultTxInput = Pick<VaultState, "address" | "allowance" | "deposited" | "refreshBalances">;
+type VaultTxInput = Pick<
+  VaultState,
+  "address" | "allowance" | "deposited" | "walletBalance" | "ethBalance" | "refreshBalances"
+>;
 
 export function useDeposit(
   vault: VaultTxInput,
@@ -185,9 +229,9 @@ export function useDeposit(
   const [state, setState] = useState<ActionState>({ phase: "idle" });
   const pendingAmount = useRef<string | null>(null);
   const { writeContractAsync } = useWriteContract();
-  const { isSuccess, isLoading } = useWaitForTransactionReceipt({ hash: state.hash });
 
   const useUsdcPath = prefersUsdcGas(profile, payWithEth);
+  const depositRoute = resolveDepositRoute(profile, payWithEth, useUsdcPath);
 
   const submitDepositEth = useCallback(
     async (amount: string) => {
@@ -258,17 +302,10 @@ export function useDeposit(
         useUsdcGas,
       });
 
-      setState({ phase: "pending", batchId, gasPaidInUsdc: useUsdcGas });
-      const txHash = await waitForBatch(batchId, vault.address);
-      setState({
-        phase: "success",
-        hash: txHash,
-        batchId,
-        gasPaidInUsdc: useUsdcGas,
-      });
-      vault.refreshBalances();
+      const peekHash = await peekBatchTxHash(batchId, vault.address);
+      setState({ phase: "pending", batchId, hash: peekHash, gasPaidInUsdc: useUsdcGas });
     },
-    [vault.address, vault.allowance, vault.refreshBalances, profile]
+    [vault.address, vault.allowance, profile]
   );
 
   const depositEthSequential = useCallback(
@@ -285,68 +322,115 @@ export function useDeposit(
     [vault.address, vault.allowance, submitApproveEth, submitDepositEth]
   );
 
-  const depositEth = useCallback(
-    async (amount: string) => {
-      if (profile?.supportsSendCalls) {
-        try {
-          await depositBatch(amount, false);
-          return;
-        } catch {
-          // Wallet batch unsupported — fall back to separate approve + deposit txs
-        }
-      }
-      await depositEthSequential(amount);
-    },
-    [profile?.supportsSendCalls, depositBatch, depositEthSequential]
-  );
-
-  const depositUsdc = useCallback(
-    async (amount: string) => {
-      try {
-        await depositBatch(amount, true);
-      } catch (e) {
-        if (!payWithEth) {
-          try {
-            await depositEth(amount);
-            return;
-          } catch {
-            // keep original error if ETH path also fails
-          }
-        }
-        setState({ phase: "error", error: humanizeError(e), gasPaidInUsdc: true });
-      }
-    },
-    [depositBatch, depositEth, payWithEth]
-  );
-
   const deposit = useCallback(
     async (amount: string) => {
-      if (useUsdcPath && profile) {
-        await depositUsdc(amount);
-      } else {
-        await depositEth(amount);
+      if (!vault.address) return;
+      const wei = toUnits(amount, VAULT.asset.decimals);
+      if (wei <= 0n) return;
+
+      const route = resolveDepositRoute(profile, payWithEth, useUsdcPath);
+
+      const preflight = await preflightDeposit({
+        address: vault.address,
+        amount: wei,
+        allowance: vault.allowance,
+        walletBalance: vault.walletBalance,
+        ethBalance: vault.ethBalance,
+        route,
+      });
+
+      if (!preflight.ok) {
+        setState({ phase: "error", error: preflight.message });
+        return;
+      }
+
+      try {
+        if (route === "usdc-batch" || route === "eth-batch") {
+          await depositBatch(amount, route === "usdc-batch");
+        } else {
+          await depositEthSequential(amount);
+        }
+      } catch (e) {
+        setState({ phase: "error", error: humanizeError(e) });
       }
     },
-    [useUsdcPath, profile, depositUsdc, depositEth]
+    [
+      vault.address,
+      vault.allowance,
+      vault.walletBalance,
+      vault.ethBalance,
+      profile,
+      payWithEth,
+      useUsdcPath,
+      depositBatch,
+      depositEthSequential,
+    ]
   );
 
   useEffect(() => {
-    if (!state.hash || isLoading || !isSuccess) return;
+    if (state.phase !== "approve-confirming" || !state.hash) return;
 
-    if (state.phase === "approve-confirming") {
-      const amount = pendingAmount.current;
-      pendingAmount.current = null;
-      vault.refreshBalances();
-      if (amount) void submitDepositEth(amount);
-      else setState({ phase: "idle" });
-      return;
-    }
+    let cancelled = false;
+    void waitForTxHash(state.hash)
+      .then(() => {
+        if (cancelled) return;
+        const amount = pendingAmount.current;
+        pendingAmount.current = null;
+        vault.refreshBalances();
+        if (amount) void submitDepositEth(amount);
+        else setState({ phase: "idle" });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ phase: "error", error: "Approval confirmation timed out." });
+      });
 
-    if (state.phase === "pending" && !state.batchId) {
-      setState((s) => ({ ...s, phase: "success" }));
-      vault.refreshBalances();
-    }
-  }, [state.hash, state.phase, state.batchId, isLoading, isSuccess, submitDepositEth, vault.refreshBalances]);
+    return () => {
+      cancelled = true;
+    };
+  }, [state.phase, state.hash, submitDepositEth, vault.refreshBalances]);
+
+  useEffect(() => {
+    if (state.phase !== "pending" || !state.batchId || !vault.address) return;
+
+    let cancelled = false;
+    void confirmBatch(state.batchId, vault.address)
+      .then((hash) => {
+        if (cancelled) return;
+        setState((s) => ({ ...s, phase: "success", hash }));
+        vault.refreshBalances();
+      })
+      .catch((e) => {
+        if (!cancelled) setState({ phase: "error", error: humanizeError(e) });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.phase, state.batchId, vault.address, vault.refreshBalances]);
+
+  useEffect(() => {
+    if (state.phase !== "pending" || state.batchId || !state.hash) return;
+
+    let cancelled = false;
+    void waitForTxHash(state.hash)
+      .then(() => {
+        if (cancelled) return;
+        setState((s) => ({ ...s, phase: "success" }));
+        vault.refreshBalances();
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setState({
+            phase: "error",
+            error: "Transaction confirmation timed out. Check the explorer — if it succeeded, refresh the page.",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.phase, state.batchId, state.hash, vault.refreshBalances]);
 
   const reset = useCallback(() => {
     pendingAmount.current = null;
@@ -360,6 +444,16 @@ export function useDeposit(
     reset,
     busy,
     willUseUsdcGas: useUsdcPath,
+    depositRoute,
+    depositBlocker: (amount: string) => {
+      const wei = toUnits(amount, VAULT.asset.decimals);
+      return syncDepositBlocker({
+        amount: wei,
+        walletBalance: vault.walletBalance,
+        ethBalance: vault.ethBalance,
+        route: depositRoute,
+      });
+    },
   };
 }
 
