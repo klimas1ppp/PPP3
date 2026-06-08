@@ -2,14 +2,18 @@
 
 import { VAULT } from "@/config";
 import { fmtAmount, fmtUsd, humanizeError, sanitizeAmount, toUnits, trimUnits } from "@/lib/format";
-import { useDeposit, useVault, useWithdraw, type TxPhase } from "@/hooks/use-vault";
+import { useDeposit, useVault, useWithdraw, type TxPhase, type VaultState } from "@/hooks/use-vault";
 import { useState } from "react";
 
 export function VaultApp() {
   const vault = useVault();
+  const deposit = useDeposit(vault);
+  const withdraw = useWithdraw(vault);
   const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
 
   const canTransact = vault.isConnected && vault.isOnBase;
+  const txBusy = deposit.busy || withdraw.busy;
+  const showTransact = canTransact || txBusy;
 
   return (
     <div className="vault-card">
@@ -20,11 +24,11 @@ export function VaultApp() {
 
       <StatsRow vault={vault} />
 
-      {!canTransact ? (
+      {!showTransact ? (
         vault.isConnected && !vault.isOnBase ? (
-          <SwitchNetworkButton />
+          <SwitchNetworkButton vault={vault} />
         ) : (
-          <ConnectNudge />
+          <ConnectNudge vault={vault} />
         )
       ) : (
         <>
@@ -40,7 +44,11 @@ export function VaultApp() {
               </button>
             ))}
           </div>
-          {tab === "deposit" ? <DepositPanel /> : <WithdrawPanel />}
+          {tab === "deposit" ? (
+            <DepositPanel vault={vault} deposit={deposit} />
+          ) : (
+            <WithdrawPanel vault={vault} withdraw={withdraw} />
+          )}
         </>
       )}
 
@@ -55,9 +63,7 @@ export function VaultApp() {
   );
 }
 
-function ConnectNudge() {
-  const vault = useVault();
-
+function ConnectNudge({ vault }: { vault: VaultState }) {
   return (
     <div className="connect-nudge">
       <p className="connect-nudge-text">
@@ -75,8 +81,7 @@ function ConnectNudge() {
   );
 }
 
-function SwitchNetworkButton() {
-  const vault = useVault();
+function SwitchNetworkButton({ vault }: { vault: VaultState }) {
   return (
     <button type="button" className="btn-primary" onClick={vault.switchToBase} disabled={vault.isSwitching}>
       {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
@@ -84,7 +89,7 @@ function SwitchNetworkButton() {
   );
 }
 
-function StatsRow({ vault }: { vault: ReturnType<typeof useVault> }) {
+function StatsRow({ vault }: { vault: VaultState }) {
   const d = VAULT.asset.decimals;
 
   return (
@@ -110,14 +115,17 @@ function Stat({ label, value, loading }: { label: string; value: string; loading
   );
 }
 
-function DepositPanel() {
-  const vault = useVault();
+function DepositPanel({
+  vault,
+  deposit,
+}: {
+  vault: VaultState;
+  deposit: ReturnType<typeof useDeposit>;
+}) {
   const [amount, setAmount] = useState("");
-  const deposit = useDeposit(() => vault.refetch());
 
   const wei = toUnits(amount, VAULT.asset.decimals);
   const insufficient = wei > vault.walletBalance;
-  const needsApproval = deposit.needsApproval(amount);
 
   return (
     <div className="form">
@@ -130,23 +138,26 @@ function DepositPanel() {
         error={insufficient ? "Insufficient balance" : undefined}
       />
       <TxStatus state={deposit.state} verb="Deposit" onDone={() => { setAmount(""); deposit.reset(); }} />
-      {needsApproval && !deposit.busy && deposit.state.phase !== "success" ? (
-        <button type="button" className="btn-primary" disabled={wei <= 0n || insufficient} onClick={() => deposit.approve(amount)}>
-          Approve {VAULT.asset.symbol}
-        </button>
-      ) : (
-        <button type="button" className="btn-primary" disabled={wei <= 0n || insufficient || deposit.busy} onClick={() => deposit.deposit(amount)}>
-          {btnLabel(deposit.state.phase, "Deposit")}
-        </button>
-      )}
+      <button
+        type="button"
+        className="btn-primary"
+        disabled={wei <= 0n || insufficient || deposit.busy}
+        onClick={() => deposit.deposit(amount)}
+      >
+        {btnLabel(deposit.state.phase, "Deposit")}
+      </button>
     </div>
   );
 }
 
-function WithdrawPanel() {
-  const vault = useVault();
+function WithdrawPanel({
+  vault,
+  withdraw,
+}: {
+  vault: VaultState;
+  withdraw: ReturnType<typeof useWithdraw>;
+}) {
   const [amount, setAmount] = useState("");
-  const withdraw = useWithdraw(() => vault.refetch());
 
   const wei = toUnits(amount, VAULT.asset.decimals);
   const insufficient = wei > vault.deposited;
@@ -257,6 +268,8 @@ function Banner({ tone, children }: { tone: "info" | "warn" | "error" | "success
 }
 
 function btnLabel(phase: TxPhase, verb: string) {
+  if (phase === "approving") return "Approve in wallet…";
+  if (phase === "approve-confirming") return "Approving…";
   if (phase === "signing") return "Confirm in wallet…";
   if (phase === "pending") return `${verb}ing…`;
   if (phase === "success") return "Done ✓";
