@@ -11,7 +11,7 @@ const body = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: "PPP Charity Vault",
-  description: "Deposit USDC, keep your principal, donate the yield.",
+  description: "Deposit USDC, keep your principal, Donate the yield.",
   icons: { icon: "/favicon.svg" },
 };
 
