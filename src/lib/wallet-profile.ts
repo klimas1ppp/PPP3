@@ -9,6 +9,7 @@ const BASE_CHAIN_HEX = `0x${VAULT.chainId.toString(16)}` as const;
 
 export type WalletDepositProfile = {
   isRabby: boolean;
+  isMetaMask: boolean;
   supportsSendCalls: boolean;
   supportsAtomicBatch: boolean;
   supportsUsdcGas: boolean;
@@ -38,6 +39,28 @@ function isAtomicSupported(caps?: ChainCapabilities): boolean {
   return atomic?.status === "supported" || atomic?.supported === true || atomic?.supported === "supported";
 }
 
+function detectMetaMask(provider: EIP1193Provider & { isMetaMask?: boolean }): boolean {
+  if (provider.isMetaMask && !(provider as { isRabby?: boolean }).isRabby) return true;
+
+  const account = getAccount(wagmiConfig);
+  const connectorId = account.connector?.id?.toLowerCase() ?? "";
+  const connectorName = account.connector?.name?.toLowerCase() ?? "";
+  if (connectorId.includes("metamask") || connectorName.includes("metamask")) return true;
+
+  if (typeof window !== "undefined") {
+    const eth = window.ethereum as {
+      isMetaMask?: boolean;
+      isRabby?: boolean;
+      providers?: Array<{ isMetaMask?: boolean; isRabby?: boolean }>;
+    };
+    if (eth?.isMetaMask && !eth?.isRabby) return true;
+    const mm = eth?.providers?.find((p) => p.isMetaMask && !p.isRabby);
+    if (mm) return true;
+  }
+
+  return false;
+}
+
 function detectRabby(provider: EIP1193Provider & { isRabby?: boolean }): boolean {
   if (provider.isRabby) return true;
 
@@ -65,6 +88,7 @@ export async function detectWalletProfile(address: Address): Promise<WalletDepos
   } catch {
     return {
       isRabby: false,
+      isMetaMask: false,
       supportsSendCalls: false,
       supportsAtomicBatch: false,
       supportsUsdcGas: false,
@@ -72,6 +96,7 @@ export async function detectWalletProfile(address: Address): Promise<WalletDepos
   }
 
   const isRabby = detectRabby(provider);
+  const isMetaMask = detectMetaMask(provider);
 
   try {
     const raw = (await provider.request({
@@ -85,27 +110,30 @@ export async function detectWalletProfile(address: Address): Promise<WalletDepos
 
     return {
       isRabby,
+      isMetaMask,
       supportsSendCalls: true,
       supportsAtomicBatch: isAtomicSupported(baseCaps) || isAtomicSupported(globalCaps),
-      supportsUsdcGas: paymasterSupported || isRabby,
+      // Rabby GasAccount + MetaMask gas-included txs on Base; smart accounts via paymaster
+      supportsUsdcGas: paymasterSupported || isRabby || isMetaMask,
     };
   } catch {
     return {
       isRabby,
+      isMetaMask,
       supportsSendCalls: false,
       supportsAtomicBatch: false,
-      supportsUsdcGas: isRabby,
+      supportsUsdcGas: isRabby || isMetaMask,
     };
   }
 }
 
-/** Rabby GasAccount — user picks USDC gas at sign time on a single tx. */
+/** Default to USDC gas when the wallet supports it (Rabby GasAccount, MetaMask on Base, paymaster). */
 export function prefersUsdcGas(
   profile: WalletDepositProfile | null | undefined,
   payWithEth: boolean
 ): boolean {
   if (payWithEth || !profile) return false;
-  return profile.isRabby;
+  return profile.supportsUsdcGas;
 }
 
 export function depositGasHint(
@@ -113,7 +141,8 @@ export function depositGasHint(
   useUsdcPath: boolean
 ): string | null {
   if (!useUsdcPath || !profile) return null;
-  if (profile.supportsSendCalls && profile.supportsUsdcGas) return "Gas paid in USDC";
   if (profile.isRabby) return "Select GasAccount in Rabby to pay gas in USDC";
+  if (profile.isMetaMask) return "Select USDC in MetaMask to pay the network fee";
+  if (profile.supportsSendCalls && profile.supportsUsdcGas) return "Gas paid in USDC";
   return null;
 }

@@ -20,10 +20,11 @@ export function resolveDepositRoute(
   payWithEth: boolean,
   useUsdcPath: boolean
 ): DepositRoute {
-  // Standard MetaMask / Rabby: single-tx deposit or depositWithPermit
-  if (!profile?.supportsSendCalls || profile.isRabby) return "eth-sequential";
-  // Base Smart Account USDC gas via EIP-5792 (not standard EOA MetaMask)
-  if (useUsdcPath && profile.supportsUsdcGas) return "usdc-batch";
+  if (!useUsdcPath) return "eth-sequential";
+  // Rabby GasAccount + MetaMask gas-included: USDC gas on a single standard tx
+  if (profile?.isRabby || profile?.isMetaMask) return "eth-sequential";
+  // Smart-account wallets: EIP-5792 batch + wallet paymaster
+  if (profile?.supportsSendCalls && profile?.supportsUsdcGas) return "usdc-batch";
   return "eth-sequential";
 }
 
@@ -59,21 +60,21 @@ export function syncDepositBlocker({
   ethBalance,
   route,
   profile,
+  useUsdcGas,
 }: {
   amount: bigint;
   walletBalance: bigint;
   ethBalance: bigint;
   route: DepositRoute;
   profile?: WalletDepositProfile | null;
+  useUsdcGas?: boolean;
 }): string | null {
   if (amount <= 0n) return null;
   if (amount > walletBalance) return "Insufficient USDC balance.";
 
-  const needsEth = route === "eth-sequential";
+  const needsEth = route === "eth-sequential" && !useUsdcGas;
   if (needsEth && ethBalance < MIN_ETH_FOR_GAS) {
-    // Rabby GasAccount covers gas at sign time — don't block the deposit button
-    if (profile?.isRabby) return null;
-    return "Not enough ETH on Base for gas. Add a small amount of ETH to continue.";
+    return "Not enough ETH on Base for gas. Add a small amount of ETH, or pay gas in USDC via your wallet if supported.";
   }
 
   return null;
@@ -110,6 +111,7 @@ export async function preflightDeposit({
   ethBalance,
   route,
   profile,
+  useUsdcGas,
 }: {
   address: Address;
   amount: bigint;
@@ -118,8 +120,16 @@ export async function preflightDeposit({
   ethBalance: bigint;
   route: DepositRoute;
   profile?: WalletDepositProfile | null;
+  useUsdcGas?: boolean;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
-  const sync = syncDepositBlocker({ amount, walletBalance, ethBalance, route, profile });
+  const sync = syncDepositBlocker({
+    amount,
+    walletBalance,
+    ethBalance,
+    route,
+    profile,
+    useUsdcGas,
+  });
   if (sync) return { ok: false, message: sync };
 
   try {

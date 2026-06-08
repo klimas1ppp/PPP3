@@ -240,8 +240,9 @@ export function useDeposit(
           } catch (permitErr) {
             const msg = humanizeError(permitErr);
             if (/cancelled|rejected/i.test(msg)) throw permitErr;
+            // USDC-gas wallets need a single tx — don't split into approve + deposit
+            if (gasPaidInUsdc) throw permitErr;
 
-            // MetaMask fallback: approve then deposit (two standard txs)
             setState({ phase: "signing", gasPaidInUsdc: false });
             const approveHash = await writeApprove(write, wei);
             setState({ phase: "pending", hash: approveHash, gasPaidInUsdc: false });
@@ -305,6 +306,7 @@ export function useDeposit(
         ethBalance: vault.ethBalance,
         route,
         profile,
+        useUsdcGas: useUsdcPath,
       });
 
       if (!preflight.ok) {
@@ -399,6 +401,7 @@ export function useDeposit(
         ethBalance: vault.ethBalance,
         route: depositRoute,
         profile,
+        useUsdcGas: useUsdcPath,
       });
     },
   };
