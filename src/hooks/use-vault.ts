@@ -11,6 +11,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { VAULT } from "@/config";
+import { pickWalletConnector } from "@/lib/pick-wallet-connector";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
 import {
   buildDepositCalls,
@@ -89,6 +90,14 @@ export function useWalletProfile(address: `0x${string}` | undefined, isConnected
   return { profile, loading };
 }
 
+function humanizeConnectError(message: string): string {
+  const cleaned = message.replace(/\s*Version:\s*@wagmi\/core@[\d.]+/i, "").trim();
+  if (/provider not found/i.test(cleaned)) {
+    return "No browser wallet found. On mobile, choose your wallet in the popup to open it.";
+  }
+  return cleaned;
+}
+
 export function useVault() {
   const { address, isConnected: wagmiConnected, chainId, status } = useAccount();
   const { connect, connectors, isPending: isConnecting, error: connectError } = useConnect();
@@ -142,16 +151,13 @@ export function useVault() {
   }, [refetch]);
 
   const connectWallet = useCallback(() => {
-    const injected = connectors.find((x) => x.id === "injected");
-    const walletConnect = connectors.find((x) => x.id === "walletConnect");
-    const hasInjected =
-      typeof window !== "undefined" && typeof window.ethereum !== "undefined";
-    const c =
-      hasInjected && injected
-        ? injected
-        : (walletConnect ?? injected ?? connectors[0]);
+    const c = pickWalletConnector(connectors);
     if (c) connect({ connector: c });
   }, [connect, connectors]);
+
+  const connectErrorMessage = connectError?.message
+    ? humanizeConnectError(connectError.message)
+    : null;
 
   const switchToBase = useCallback(() => {
     switchChain({ chainId: VAULT.chainId });
@@ -163,7 +169,7 @@ export function useVault() {
     isOnBase,
     isConnecting,
     isSwitching,
-    connectError: connectError?.message ?? null,
+    connectError: connectErrorMessage,
     connect: connectWallet,
     disconnect,
     switchToBase,

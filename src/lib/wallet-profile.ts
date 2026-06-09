@@ -3,7 +3,7 @@
 import { getAccount, getConnectorClient } from "@wagmi/core";
 import type { Address, EIP1193Provider } from "viem";
 import { VAULT } from "@/config";
-import { wagmiConfig } from "@/components/providers";
+import { getWagmiConfig } from "@/lib/wagmi-config";
 
 const BASE_CHAIN_HEX = `0x${VAULT.chainId.toString(16)}` as const;
 
@@ -22,7 +22,9 @@ type ChainCapabilities = {
 
 export async function getWalletProvider(): Promise<EIP1193Provider & { isRabby?: boolean }> {
   try {
-    const connectorClient = await getConnectorClient(wagmiConfig, { chainId: VAULT.chainId });
+    const connectorClient = await getConnectorClient(getWagmiConfig(), {
+      chainId: VAULT.chainId,
+    });
     const transport = connectorClient.transport as { value?: EIP1193Provider };
     if (transport.value) return transport.value as EIP1193Provider & { isRabby?: boolean };
   } catch {
@@ -42,7 +44,7 @@ function isAtomicSupported(caps?: ChainCapabilities): boolean {
 function detectMetaMask(provider: EIP1193Provider & { isMetaMask?: boolean }): boolean {
   if (provider.isMetaMask && !(provider as { isRabby?: boolean }).isRabby) return true;
 
-  const account = getAccount(wagmiConfig);
+  const account = getAccount(getWagmiConfig());
   const connectorId = account.connector?.id?.toLowerCase() ?? "";
   const connectorName = account.connector?.name?.toLowerCase() ?? "";
   if (connectorId.includes("metamask") || connectorName.includes("metamask")) return true;
@@ -64,7 +66,7 @@ function detectMetaMask(provider: EIP1193Provider & { isMetaMask?: boolean }): b
 function detectRabby(provider: EIP1193Provider & { isRabby?: boolean }): boolean {
   if (provider.isRabby) return true;
 
-  const account = getAccount(wagmiConfig);
+  const account = getAccount(getWagmiConfig());
   const connectorId = account.connector?.id?.toLowerCase() ?? "";
   const connectorName = account.connector?.name?.toLowerCase() ?? "";
   if (connectorId.includes("rabby") || connectorName.includes("rabby")) return true;
