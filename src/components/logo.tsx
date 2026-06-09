@@ -10,15 +10,26 @@ export function LogoMark({ size = 40, className }: { size?: number; className?: 
   const width = Math.round(size * (600 / 608));
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/logo-mark.svg"
-      width={width}
-      height={height}
-      alt=""
-      className={className}
-      draggable={false}
-    />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo-mark.svg"
+        width={width}
+        height={height}
+        alt=""
+        className={`logo-mark-light ${className ?? ""}`}
+        draggable={false}
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo-mark-gold.svg"
+        width={width}
+        height={height}
+        alt=""
+        className={`logo-mark-dark ${className ?? ""}`}
+        draggable={false}
+      />
+    </>
   );
 }
 

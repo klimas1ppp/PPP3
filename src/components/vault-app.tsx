@@ -10,6 +10,7 @@ import {
   type TxPhase,
   type VaultState,
 } from "@/hooks/use-vault";
+import { Switch } from "@/components/switch";
 import { useState } from "react";
 
 export function VaultApp() {
@@ -191,14 +192,13 @@ function DepositPanel({
           Advanced {showAdvanced ? "▾" : "▸"}
         </button>
         {showAdvanced && (
-          <label className="advanced-option">
-            <input
-              type="checkbox"
-              checked={payWithEth}
-              onChange={(e) => onPayWithEthChange(e.target.checked)}
-            />
-            Pay with ETH
-          </label>
+          <Switch
+            id="pay-with-eth"
+            checked={payWithEth}
+            onChange={onPayWithEthChange}
+            label="Pay with ETH"
+            className="advanced-option"
+          />
         )}
       </div>
     </div>

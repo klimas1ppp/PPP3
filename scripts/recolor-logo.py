@@ -67,8 +67,11 @@ def main() -> None:
     colored = build_svg(paths, lambda d: COLORS[classify(d)])
     favicon = build_favicon(paths)
 
+    gold = build_svg(paths, "#d4a853")
+
     OUTPUT.write_text(colored)
     (ROOT / "public" / "logo.svg").write_text(colored)
+    (ROOT / "public" / "logo-mark-gold.svg").write_text(gold)
     (ROOT / "public" / "favicon.svg").write_text(favicon)
     print(f"Recolored {len(paths)} paths -> {OUTPUT.relative_to(ROOT)}")
 

@@ -13,6 +13,22 @@
   --color-mist: #7a6e60;
   --color-surface: #fffcf7;
   --color-border: #ddd2c0;
+  --color-night: #0e261a;
+  --color-night-surface: #1a3026;
+  --color-night-border: #2a4538;
+}
+
+:root[data-theme="dark"] {
+  --color-forest: #e8d4a8;
+  --color-leaf: #6fbf7f;
+  --color-earth: #c5a059;
+  --color-ink: #e8d4a8;
+  --color-paper: #0e261a;
+  --color-gold: #d4af37;
+  --color-gold-dim: #c5a059;
+  --color-mist: #9a8f72;
+  --color-surface: #1a3026;
+  --color-border: #2a4538;
 }
 
 @layer base {
@@ -54,14 +70,40 @@ body::before {
   border-bottom: 1px solid var(--color-border);
 }
 
+.site-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.theme-toggle-placeholder {
+  display: inline-block;
+  width: 2.5rem;
+  height: 1.35rem;
+}
+
 .logo {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
 }
 
-.logo-mark {
+.logo-mark,
+.logo-mark-light,
+.logo-mark-dark {
   flex-shrink: 0;
+  display: block;
+}
+
+.logo-mark-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .logo-mark-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .logo-mark-dark {
   display: block;
 }
 
@@ -116,6 +158,18 @@ body::before {
     radial-gradient(ellipse 50% 35% at 90% 100%, rgba(212, 168, 83, 0.08), transparent),
     radial-gradient(ellipse 40% 30% at 5% 80%, rgba(107, 68, 35, 0.06), transparent),
     var(--color-paper);
+}
+
+:root[data-theme="dark"] .page {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(74, 143, 85, 0.14), transparent),
+    radial-gradient(ellipse 50% 35% at 90% 100%, rgba(212, 175, 55, 0.1), transparent),
+    radial-gradient(ellipse 40% 30% at 5% 80%, rgba(197, 160, 89, 0.06), transparent),
+    var(--color-paper);
+}
+
+:root[data-theme="dark"] body::before {
+  opacity: 0.03;
 }
 
 .page-inner {
@@ -511,17 +565,84 @@ body::before {
 }
 
 .advanced-option {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
   margin-top: 0.45rem;
-  font-size: 0.72rem;
-  color: var(--color-mist);
+}
+
+/* Green/gold switch */
+
+.ppp-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   cursor: pointer;
 }
 
-.advanced-option input {
-  accent-color: var(--color-leaf);
+.ppp-switch-text {
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  user-select: none;
+}
+
+.ppp-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 1.35rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--color-gold-dim) 35%, var(--color-night-border, var(--color-border)));
+  border-radius: 999px;
+  background: var(--color-night, #0e261a);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.ppp-switch:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-gold) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.ppp-switch-on {
+  background: color-mix(in srgb, var(--color-night-surface, #1a3026) 70%, var(--color-leaf) 30%);
+  border-color: color-mix(in srgb, var(--color-gold) 45%, var(--color-night-border, var(--color-border)));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-gold) 22%, transparent);
+}
+
+.ppp-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.35rem - 6px);
+  height: calc(1.35rem - 6px);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f9e29c 0%, #d4af37 45%, #9a7030 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.ppp-switch-on .ppp-switch-thumb {
+  transform: translateX(1.15rem);
+}
+
+.ppp-switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.theme-toggle .ppp-switch-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .banner {

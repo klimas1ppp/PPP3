@@ -1,5 +1,6 @@
 import { Hero, HowItWorks, Impact } from "@/components/landing";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { VaultApp } from "@/components/vault-app";
 import { WalletButton } from "@/components/wallet-button";
 
@@ -8,7 +9,10 @@ export default function Home() {
     <>
       <header className="site-header">
         <Logo size={38} />
-        <WalletButton />
+        <div className="site-header-actions">
+          <ThemeToggle />
+          <WalletButton />
+        </div>
       </header>
       <main className="page">
         <div className="page-inner">
