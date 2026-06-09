@@ -142,7 +142,14 @@ export function useVault() {
   }, [refetch]);
 
   const connectWallet = useCallback(() => {
-    const c = connectors.find((x) => x.id === "injected") ?? connectors[0];
+    const injected = connectors.find((x) => x.id === "injected");
+    const walletConnect = connectors.find((x) => x.id === "walletConnect");
+    const hasInjected =
+      typeof window !== "undefined" && typeof window.ethereum !== "undefined";
+    const c =
+      hasInjected && injected
+        ? injected
+        : (walletConnect ?? injected ?? connectors[0]);
     if (c) connect({ connector: c });
   }, [connect, connectors]);
 

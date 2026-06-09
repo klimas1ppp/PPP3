@@ -13,22 +13,25 @@
   --color-mist: #7a6e60;
   --color-surface: #fffcf7;
   --color-border: #ddd2c0;
-  --color-night: #0e261a;
-  --color-night-surface: #1a3026;
-  --color-night-border: #2a4538;
+  --color-night: #0c2319;
+  --color-night-surface: #182a22;
+  --color-night-border: #264035;
 }
 
 :root[data-theme="dark"] {
-  --color-forest: #e8d4a8;
+  --color-forest: #f0d878;
   --color-leaf: #6fbf7f;
-  --color-earth: #c5a059;
-  --color-ink: #e8d4a8;
-  --color-paper: #0e261a;
-  --color-gold: #d4af37;
-  --color-gold-dim: #c5a059;
+  --color-earth: #e0b040;
+  --color-ink: #f0d878;
+  --color-paper: #0c2319;
+  --color-gold: #f0c84a;
+  --color-gold-dim: #e0b040;
   --color-mist: #9a8f72;
-  --color-surface: #1a3026;
-  --color-border: #2a4538;
+  --color-surface: #182a22;
+  --color-border: #264035;
+  --color-night: #0e261a;
+  --color-night-surface: #1a3026;
+  --color-night-border: #2a4538;
 }
 
 @layer base {
@@ -163,9 +166,53 @@ body::before {
 :root[data-theme="dark"] .page {
   background:
     radial-gradient(ellipse 70% 45% at 50% -5%, rgba(74, 143, 85, 0.14), transparent),
-    radial-gradient(ellipse 50% 35% at 90% 100%, rgba(212, 175, 55, 0.1), transparent),
-    radial-gradient(ellipse 40% 30% at 5% 80%, rgba(197, 160, 89, 0.06), transparent),
+    radial-gradient(ellipse 50% 35% at 90% 100%, rgba(240, 200, 74, 0.07), transparent),
+    radial-gradient(ellipse 40% 30% at 5% 80%, rgba(224, 176, 64, 0.04), transparent),
     var(--color-paper);
+}
+
+:root[data-theme="dark"] .site-header {
+  background: color-mix(in srgb, var(--color-paper) 94%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--color-gold) 18%, var(--color-border));
+}
+
+:root[data-theme="dark"] .logo-word,
+:root[data-theme="dark"] .hero-headline,
+:root[data-theme="dark"] .info-heading,
+:root[data-theme="dark"] .vault-title {
+  color: var(--color-gold);
+}
+
+:root[data-theme="dark"] .hero-mission,
+:root[data-theme="dark"] .vault-eyebrow {
+  color: var(--color-gold-dim);
+}
+
+:root[data-theme="dark"] .vault-card {
+  border-color: color-mix(in srgb, var(--color-gold) 22%, var(--color-border));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-gold) 35%, transparent),
+    0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="dark"] .tab-active {
+  background: linear-gradient(180deg, #f8dc70 0%, #f0c84a 55%, #d4a020 100%);
+  color: var(--color-paper);
+}
+
+:root[data-theme="dark"] .btn-primary {
+  background: linear-gradient(180deg, #f8dc70 0%, #f0c84a 50%, #d4a020 100%);
+  color: var(--color-paper);
+  font-weight: 700;
+}
+
+:root[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffe890 0%, #f5d060 50%, #e0b030 100%);
+}
+
+:root[data-theme="dark"] .wallet-btn:hover:not(:disabled) {
+  border-color: var(--color-gold);
+  background: color-mix(in srgb, var(--color-gold) 12%, var(--color-surface));
 }
 
 :root[data-theme="dark"] body::before {
@@ -605,9 +652,9 @@ body::before {
 }
 
 .ppp-switch-on {
-  background: color-mix(in srgb, var(--color-night-surface, #1a3026) 70%, var(--color-leaf) 30%);
-  border-color: color-mix(in srgb, var(--color-gold) 45%, var(--color-night-border, var(--color-border)));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--color-gold) 22%, transparent);
+  background: color-mix(in srgb, var(--color-night-surface, #0a1a14) 85%, var(--color-leaf) 15%);
+  border-color: color-mix(in srgb, var(--color-gold) 55%, var(--color-night-border, var(--color-border)));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--color-gold) 30%, transparent);
 }
 
 .ppp-switch-thumb {
@@ -617,11 +664,30 @@ body::before {
   width: calc(1.35rem - 6px);
   height: calc(1.35rem - 6px);
   border-radius: 50%;
-  background: linear-gradient(145deg, #f9e29c 0%, #d4af37 45%, #9a7030 100%);
+  background: linear-gradient(145deg, #fff4c8 0%, #f0c84a 42%, #c99a20 100%);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 6px color-mix(in srgb, #f0c84a 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
   transition: transform 0.2s ease;
+}
+
+:root[data-theme="dark"] .ppp-switch {
+  background: var(--color-night);
+  border-color: color-mix(in srgb, var(--color-gold) 28%, var(--color-night-border));
+}
+
+:root[data-theme="dark"] .ppp-switch-on {
+  background: var(--color-night-surface);
+  border-color: color-mix(in srgb, var(--color-gold) 65%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--color-gold) 40%, transparent);
+}
+
+:root[data-theme="dark"] .ppp-switch-on .ppp-switch-thumb {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    0 0 10px color-mix(in srgb, #f0c84a 55%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .ppp-switch-on .ppp-switch-thumb {
