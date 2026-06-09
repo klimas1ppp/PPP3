@@ -11,7 +11,7 @@ import {
   type VaultState,
 } from "@/hooks/use-vault";
 import { Switch } from "@/components/switch";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ThemedConnectButton } from "@/components/themed-connect-button";
 import { useState } from "react";
 
 export function VaultApp() {
@@ -78,7 +78,7 @@ function ConnectNudge() {
       <p className="connect-nudge-text">
         Connect your wallet to deposit USDC and put your savings to work for good — your principal stays fully yours.
       </p>
-      <ConnectButton />
+      <ThemedConnectButton variant="primary" />
     </div>
   );
 }

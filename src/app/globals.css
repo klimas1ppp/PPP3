@@ -37,6 +37,7 @@
 @layer base {
   html {
     @apply antialiased;
+    overflow-x: clip;
   }
 
   body {
@@ -44,6 +45,8 @@
     background: var(--color-paper);
     color: var(--color-forest);
     min-height: 100dvh;
+    overflow-x: clip;
+    max-width: 100%;
   }
 }
 
@@ -67,6 +70,8 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
   padding: 1rem 1.5rem;
   background: color-mix(in srgb, var(--color-paper) 88%, transparent);
   backdrop-filter: blur(10px);
@@ -77,6 +82,19 @@ body::before {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.wallet-btn-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.wallet-btn-wrap > div {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .theme-toggle-placeholder {
@@ -144,6 +162,13 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.connect-nudge .btn-primary.wallet-btn-connected {
+  width: auto;
+  justify-content: center;
 }
 
 .wallet-dot {
@@ -155,6 +180,8 @@ body::before {
 
 .page {
   min-height: 100dvh;
+  max-width: 100%;
+  overflow-x: clip;
   padding: 5.5rem 1.25rem 4rem;
   background:
     radial-gradient(ellipse 70% 45% at 50% -5%, rgba(74, 143, 85, 0.1), transparent),
@@ -222,10 +249,16 @@ body::before {
 .page-inner {
   width: 100%;
   max-width: 32rem;
+  min-width: 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 2.75rem;
+}
+
+.page-inner > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Hero */
@@ -382,10 +415,27 @@ body::before {
   align-items: center;
   text-align: center;
   gap: 0.85rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 1.5rem 1rem;
   background: color-mix(in srgb, var(--color-leaf) 4%, var(--color-surface));
   border: 1px dashed color-mix(in srgb, var(--color-earth) 25%, var(--color-border));
   border-radius: 0.85rem;
+}
+
+.connect-nudge-actions {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.connect-nudge-actions > div {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .connect-nudge-text {
@@ -421,6 +471,9 @@ body::before {
 
 .vault-card {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1.25rem;
@@ -467,6 +520,7 @@ body::before {
 }
 
 .stat {
+  min-width: 0;
   background: color-mix(in srgb, var(--color-paper) 65%, var(--color-surface));
   border: 1px solid var(--color-border);
   border-radius: 0.65rem;
@@ -488,6 +542,7 @@ body::before {
   margin-top: 0.25rem;
   font-variant-numeric: tabular-nums;
   color: var(--color-forest);
+  overflow-wrap: anywhere;
 }
 
 .tab-row {
@@ -529,6 +584,8 @@ body::before {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.75rem 0.85rem;
   background: color-mix(in srgb, var(--color-paper) 65%, var(--color-surface));
   border: 1px solid var(--color-border);
@@ -557,12 +614,14 @@ body::before {
 }
 
 .amount-symbol {
+  flex-shrink: 0;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--color-mist);
 }
 
 .amount-max {
+  flex-shrink: 0;
   padding: 0.2rem 0.45rem;
   border-radius: 0.35rem;
   border: 1px solid var(--color-border);
@@ -576,6 +635,8 @@ body::before {
 .amount-meta {
   display: flex;
   justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-top: 0.35rem;
   font-size: 0.7rem;
   color: var(--color-mist);
@@ -793,4 +854,31 @@ body::before {
 
 .vault-footer a:hover {
   color: var(--color-gold-dim);
+}
+
+@media (max-width: 400px) {
+  .site-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .site-header-actions {
+    gap: 0.5rem;
+  }
+
+  .page {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .vault-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .stats-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .amount-input {
+    font-size: 1.15rem;
+  }
 }

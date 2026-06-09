@@ -1,13 +1,7 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ThemedConnectButton } from "@/components/themed-connect-button";
 
 export function WalletButton() {
-  return (
-    <ConnectButton
-      chainStatus="icon"
-      showBalance={false}
-      accountStatus={{ smallScreen: "avatar", largeScreen: "full" }}
-    />
-  );
+  return <ThemedConnectButton variant="header" />;
 }
