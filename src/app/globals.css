@@ -395,6 +395,30 @@ body::before {
   max-width: 18rem;
 }
 
+.connect-mobile-help {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 20rem;
+}
+
+.connect-mobile-hint {
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  line-height: 1.5;
+}
+
+.connect-metamask-link {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-leaf);
+  text-decoration: none;
+}
+
+.connect-metamask-link:hover {
+  text-decoration: underline;
+}
+
 .vault-card {
   width: 100%;
   background: var(--color-surface);

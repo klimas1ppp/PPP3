@@ -10,7 +10,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { VAULT } from "@/config";
-import { openConnectModal } from "@/lib/wagmi-config";
+import { connectWallet as startWalletConnect, refreshWalletSession } from "@/lib/connect-wallet";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
 import {
   buildDepositCalls,
@@ -144,8 +144,17 @@ export function useVault() {
   const connectWallet = useCallback(() => {
     if (isConnecting) return;
     setIsConnecting(true);
-    void openConnectModal().finally(() => setIsConnecting(false));
+    void startWalletConnect().finally(() => setIsConnecting(false));
   }, [isConnecting]);
+
+  // iOS 17+ does not auto-return from MetaMask — refresh when user switches back.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshWalletSession();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   const isConnectBusy = isConnecting || status === "connecting";
 

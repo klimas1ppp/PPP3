@@ -11,7 +11,12 @@ import {
   type VaultState,
 } from "@/hooks/use-vault";
 import { Switch } from "@/components/switch";
-import { useState } from "react";
+import {
+  getMetaMaskDappLink,
+  isMobileBrowser,
+  isWalletInAppBrowser,
+} from "@/lib/connect-wallet";
+import { useEffect, useState } from "react";
 
 export function VaultApp() {
   const vault = useVault();
@@ -74,6 +79,12 @@ export function VaultApp() {
 }
 
 function ConnectNudge({ vault }: { vault: VaultState }) {
+  const [showMobileHelp, setShowMobileHelp] = useState(false);
+
+  useEffect(() => {
+    setShowMobileHelp(isMobileBrowser() && !isWalletInAppBrowser());
+  }, []);
+
   return (
     <div className="connect-nudge">
       <p className="connect-nudge-text">
@@ -87,6 +98,17 @@ function ConnectNudge({ vault }: { vault: VaultState }) {
       >
         {vault.isConnecting ? "Connecting…" : "Connect Wallet"}
       </button>
+      {showMobileHelp && (
+        <div className="connect-mobile-help">
+          <p className="connect-mobile-hint">
+            On iPhone: after choosing MetaMask, tap <strong>Open</strong>, approve in the app, then
+            switch back to this browser — your wallet will connect.
+          </p>
+          <a className="connect-metamask-link" href={getMetaMaskDappLink()}>
+            Or open in MetaMask browser →
+          </a>
+        </div>
+      )}
     </div>
   );
 }
