@@ -11,12 +11,8 @@ import {
   type VaultState,
 } from "@/hooks/use-vault";
 import { Switch } from "@/components/switch";
-import {
-  getMetaMaskDappLink,
-  isMobileBrowser,
-  isWalletInAppBrowser,
-} from "@/lib/connect-wallet";
-import { useEffect, useState } from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useState } from "react";
 
 export function VaultApp() {
   const vault = useVault();
@@ -43,7 +39,7 @@ export function VaultApp() {
         vault.isConnected && !vault.isOnBase ? (
           <SwitchNetworkButton vault={vault} />
         ) : (
-          <ConnectNudge vault={vault} />
+          <ConnectNudge />
         )
       ) : (
         <>
@@ -67,8 +63,6 @@ export function VaultApp() {
         </>
       )}
 
-      {vault.connectError && <Banner tone="error">{vault.connectError}</Banner>}
-
       <footer className="vault-footer">
         <a href={`${VAULT.explorer}/address/${VAULT.address}`} target="_blank" rel="noreferrer">
           View vault on BaseScan →
@@ -78,37 +72,13 @@ export function VaultApp() {
   );
 }
 
-function ConnectNudge({ vault }: { vault: VaultState }) {
-  const [showMobileHelp, setShowMobileHelp] = useState(false);
-
-  useEffect(() => {
-    setShowMobileHelp(isMobileBrowser() && !isWalletInAppBrowser());
-  }, []);
-
+function ConnectNudge() {
   return (
     <div className="connect-nudge">
       <p className="connect-nudge-text">
         Connect your wallet to deposit USDC and put your savings to work for good — your principal stays fully yours.
       </p>
-      <button
-        type="button"
-        className="btn-primary"
-        onClick={vault.connect}
-        disabled={vault.isConnecting}
-      >
-        {vault.isConnecting ? "Connecting…" : "Connect Wallet"}
-      </button>
-      {showMobileHelp && (
-        <div className="connect-mobile-help">
-          <p className="connect-mobile-hint">
-            On iPhone: after choosing MetaMask, tap <strong>Open</strong>, approve in the app, then
-            switch back to this browser — your wallet will connect.
-          </p>
-          <a className="connect-metamask-link" href={getMetaMaskDappLink()}>
-            Or open in MetaMask browser →
-          </a>
-        </div>
-      )}
+      <ConnectButton />
     </div>
   );
 }

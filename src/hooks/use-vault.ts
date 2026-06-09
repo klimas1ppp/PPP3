@@ -4,13 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useAccount,
   useBalance,
-  useDisconnect,
   useReadContracts,
   useSwitchChain,
   useWriteContract,
 } from "wagmi";
 import { VAULT } from "@/config";
-import { connectWallet as startWalletConnect, refreshWalletSession } from "@/lib/connect-wallet";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
 import {
   buildDepositCalls,
@@ -91,8 +89,6 @@ export function useWalletProfile(address: `0x${string}` | undefined, isConnected
 
 export function useVault() {
   const { address, isConnected: wagmiConnected, chainId, status } = useAccount();
-  const [isConnecting, setIsConnecting] = useState(false);
-  const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
   // Wallet extensions can briefly report disconnected while a tx is signing.
@@ -141,23 +137,6 @@ export function useVault() {
     void refreshWithRetry(refetch);
   }, [refetch]);
 
-  const connectWallet = useCallback(() => {
-    if (isConnecting) return;
-    setIsConnecting(true);
-    void startWalletConnect().finally(() => setIsConnecting(false));
-  }, [isConnecting]);
-
-  // iOS 17+ does not auto-return from MetaMask — refresh when user switches back.
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void refreshWalletSession();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, []);
-
-  const isConnectBusy = isConnecting || status === "connecting";
-
   const switchToBase = useCallback(() => {
     switchChain({ chainId: VAULT.chainId });
   }, [switchChain]);
@@ -166,11 +145,7 @@ export function useVault() {
     address: stableAddress,
     isConnected,
     isOnBase,
-    isConnecting: isConnectBusy,
     isSwitching,
-    connectError: null,
-    connect: connectWallet,
-    disconnect,
     switchToBase,
     totalAssets,
     walletBalance,
