@@ -1,6 +1,7 @@
 import { createConfig, http, injected, type Config } from "wagmi";
 import { base } from "wagmi/chains";
 import { walletConnect } from "wagmi/connectors";
+
 function getWalletConnectProjectId(): string {
   const id = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
   if (!id) {
@@ -11,9 +12,12 @@ function getWalletConnectProjectId(): string {
   return id;
 }
 
+/** Must match the domain allowlisted at https://dashboard.reown.com (no trailing slash). */
 export function getAppOrigin(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
   if (typeof window !== "undefined") return window.location.origin;
-  return process.env.NEXT_PUBLIC_APP_URL ?? "https://ppp-pt.vercel.app";
+  return "https://ppp-pt.vercel.app";
 }
 
 function walletConnectMetadata(origin: string) {
@@ -25,11 +29,20 @@ function walletConnectMetadata(origin: string) {
   };
 }
 
-function buildWagmiConfig(): Config {
+let activeWagmiConfig: Config | undefined;
+
+export function getWagmiConfig(): Config {
+  if (!activeWagmiConfig) {
+    throw new Error("Wagmi config is not ready — wait for client hydration.");
+  }
+  return activeWagmiConfig;
+}
+
+export function createWagmiConfig(): Config {
   const origin = getAppOrigin();
   const projectId = getWalletConnectProjectId();
 
-  return createConfig({
+  const config = createConfig({
     chains: [base],
     connectors: [
       injected(),
@@ -44,11 +57,7 @@ function buildWagmiConfig(): Config {
     },
     ssr: true,
   });
-}
 
-let wagmiConfigSingleton: Config | undefined;
-
-export function getWagmiConfig(): Config {
-  if (!wagmiConfigSingleton) wagmiConfigSingleton = buildWagmiConfig();
-  return wagmiConfigSingleton;
+  activeWagmiConfig = config;
+  return config;
 }

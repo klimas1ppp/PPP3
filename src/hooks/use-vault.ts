@@ -100,7 +100,13 @@ function humanizeConnectError(message: string): string {
 
 export function useVault() {
   const { address, isConnected: wagmiConnected, chainId, status } = useAccount();
-  const { connect, connectors, isPending: isConnecting, error: connectError } = useConnect();
+  const {
+    connect,
+    connectors,
+    isPending: isConnecting,
+    error: connectError,
+    reset: resetConnect,
+  } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
@@ -151,9 +157,19 @@ export function useVault() {
   }, [refetch]);
 
   const connectWallet = useCallback(() => {
+    if (isConnecting) {
+      resetConnect();
+      return;
+    }
     const c = pickWalletConnector(connectors);
     if (c) connect({ connector: c });
-  }, [connect, connectors]);
+  }, [connect, connectors, isConnecting, resetConnect]);
+
+  useEffect(() => {
+    if (!isConnecting) return;
+    const timer = window.setTimeout(() => resetConnect(), 45_000);
+    return () => window.clearTimeout(timer);
+  }, [isConnecting, resetConnect]);
 
   const connectErrorMessage = connectError?.message
     ? humanizeConnectError(connectError.message)
