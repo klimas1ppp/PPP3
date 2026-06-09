@@ -4,14 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useAccount,
   useBalance,
-  useConnect,
   useDisconnect,
   useReadContracts,
   useSwitchChain,
   useWriteContract,
 } from "wagmi";
 import { VAULT } from "@/config";
-import { pickWalletConnector } from "@/lib/pick-wallet-connector";
+import { openConnectModal } from "@/lib/wagmi-config";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
 import {
   buildDepositCalls,
@@ -90,23 +89,9 @@ export function useWalletProfile(address: `0x${string}` | undefined, isConnected
   return { profile, loading };
 }
 
-function humanizeConnectError(message: string): string {
-  const cleaned = message.replace(/\s*Version:\s*@wagmi\/core@[\d.]+/i, "").trim();
-  if (/provider not found/i.test(cleaned)) {
-    return "No browser wallet found. On mobile, choose your wallet in the popup to open it.";
-  }
-  return cleaned;
-}
-
 export function useVault() {
   const { address, isConnected: wagmiConnected, chainId, status } = useAccount();
-  const {
-    connect,
-    connectors,
-    isPending: isConnecting,
-    error: connectError,
-    reset: resetConnect,
-  } = useConnect();
+  const [isConnecting, setIsConnecting] = useState(false);
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
@@ -157,23 +142,12 @@ export function useVault() {
   }, [refetch]);
 
   const connectWallet = useCallback(() => {
-    if (isConnecting) {
-      resetConnect();
-      return;
-    }
-    const c = pickWalletConnector(connectors);
-    if (c) connect({ connector: c });
-  }, [connect, connectors, isConnecting, resetConnect]);
+    if (isConnecting) return;
+    setIsConnecting(true);
+    void openConnectModal().finally(() => setIsConnecting(false));
+  }, [isConnecting]);
 
-  useEffect(() => {
-    if (!isConnecting) return;
-    const timer = window.setTimeout(() => resetConnect(), 45_000);
-    return () => window.clearTimeout(timer);
-  }, [isConnecting, resetConnect]);
-
-  const connectErrorMessage = connectError?.message
-    ? humanizeConnectError(connectError.message)
-    : null;
+  const isConnectBusy = isConnecting || status === "connecting";
 
   const switchToBase = useCallback(() => {
     switchChain({ chainId: VAULT.chainId });
@@ -183,9 +157,9 @@ export function useVault() {
     address: stableAddress,
     isConnected,
     isOnBase,
-    isConnecting,
+    isConnecting: isConnectBusy,
     isSwitching,
-    connectError: connectErrorMessage,
+    connectError: null,
     connect: connectWallet,
     disconnect,
     switchToBase,

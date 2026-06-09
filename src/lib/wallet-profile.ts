@@ -31,7 +31,7 @@ export async function getWalletProvider(): Promise<EIP1193Provider & { isRabby?:
     // fall through to window.ethereum
   }
   if (typeof window !== "undefined" && window.ethereum) {
-    return window.ethereum;
+    return window.ethereum as EIP1193Provider & { isRabby?: boolean };
   }
   throw new Error("No wallet provider found");
 }
