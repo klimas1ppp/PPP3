@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <>
       <header className="site-header">
-        <Logo size={34} />
+        <Logo size={38} />
         <WalletButton />
       </header>
       <main className="page">

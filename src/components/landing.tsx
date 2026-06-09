@@ -1,13 +1,15 @@
 export function Hero() {
   return (
     <section className="hero">
-      <p className="hero-eyebrow">Principal Preserving Philanthropy</p>
+      <p className="hero-eyebrow">Principal Preserved. Impact Forever.</p>
+      <div className="hero-rule" aria-hidden />
       <h1 className="hero-headline">Keep Your Principal. Donate The Yield.</h1>
       <p className="hero-sub">
         Deposit USDC into a secure yield-generating vault on Base. Withdraw anytime
         while the yield supports real-world charitable projects.
       </p>
-      <p className="hero-mission">Your money helps while remaining yours.</p>
+      <p className="hero-mission">Capital preserved. Good endures.</p>
+      <div className="hero-rule hero-rule-short" aria-hidden />
     </section>
   );
 }

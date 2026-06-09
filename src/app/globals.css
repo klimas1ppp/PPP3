@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
 @theme {
+  --font-display: "Cinzel", "Times New Roman", serif;
   --font-body: "IBM Plex Sans", system-ui, sans-serif;
-  --color-ink: #0c0d0f;
-  --color-paper: #f3ece0;
+  --color-forest: #1e3a2f;
+  --color-leaf: #4a8f55;
+  --color-earth: #6b4423;
+  --color-ink: #1e3a2f;
+  --color-paper: #f5f0e6;
   --color-gold: #d4a853;
-  --color-gold-dim: #a07830;
-  --color-mist: #8a8278;
-  --color-surface: #141518;
-  --color-border: #2a2722;
+  --color-gold-dim: #9a7030;
+  --color-mist: #7a6e60;
+  --color-surface: #fffcf7;
+  --color-border: #ddd2c0;
 }
 
 @layer base {
@@ -18,19 +22,19 @@
 
   body {
     font-family: var(--font-body);
-    background: var(--color-ink);
-    color: var(--color-paper);
+    background: var(--color-paper);
+    color: var(--color-forest);
     min-height: 100dvh;
   }
 }
 
-/* Grain overlay */
+/* Parchment grain */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.035;
+  opacity: 0.045;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   z-index: 50;
 }
@@ -45,12 +49,15 @@ body::before {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
+  background: color-mix(in srgb, var(--color-paper) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .logo-mark {
@@ -58,41 +65,20 @@ body::before {
   display: block;
 }
 
-.logo-pillar-body {
-  fill: var(--color-gold);
-  opacity: 0.16;
-}
-
-.logo-pillar-yield {
-  fill: var(--color-gold);
-}
-
-.logo-pillar-line {
-  stroke: var(--color-gold);
-  stroke-opacity: 0.35;
-  stroke-width: 0.75;
-  stroke-linecap: round;
-}
-
 .logo-word {
-  font-family: var(--font-body);
-  font-size: 1.125rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  color: var(--color-paper);
-  padding-right: 0.2em;
-  text-shadow:
-    0 0 6px rgba(212, 168, 83, 0.55),
-    0 0 16px rgba(212, 168, 83, 0.45),
-    0 0 32px rgba(212, 168, 83, 0.25);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--color-forest);
 }
 
 .wallet-btn {
   padding: 0.5rem 1rem;
   border-radius: 999px;
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-earth) 35%, var(--color-border));
   background: var(--color-surface);
-  color: var(--color-paper);
+  color: var(--color-forest);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -101,6 +87,7 @@ body::before {
 
 .wallet-btn:hover:not(:disabled) {
   border-color: var(--color-gold-dim);
+  background: color-mix(in srgb, var(--color-gold) 8%, var(--color-surface));
 }
 
 .wallet-btn:disabled {
@@ -112,23 +99,23 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: var(--color-ink);
 }
 
 .wallet-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #5cb87a;
+  background: var(--color-leaf);
 }
 
 .page {
   min-height: 100dvh;
-  padding: 5rem 1.25rem 4rem;
+  padding: 5.5rem 1.25rem 4rem;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 168, 83, 0.12), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(212, 168, 83, 0.06), transparent),
-    var(--color-ink);
+    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(74, 143, 85, 0.1), transparent),
+    radial-gradient(ellipse 50% 35% at 90% 100%, rgba(212, 168, 83, 0.08), transparent),
+    radial-gradient(ellipse 40% 30% at 5% 80%, rgba(107, 68, 35, 0.06), transparent),
+    var(--color-paper);
 }
 
 .page-inner {
@@ -137,7 +124,7 @@ body::before {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 2.75rem;
 }
 
 /* Hero */
@@ -147,49 +134,75 @@ body::before {
 }
 
 .hero-eyebrow {
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--color-gold-dim);
-  margin-bottom: 0.75rem;
+  color: var(--color-earth);
+  margin-bottom: 0.85rem;
+}
+
+.hero-rule {
+  width: min(100%, 18rem);
+  height: 1px;
+  margin: 0 auto 1.1rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-earth) 45%, var(--color-border)) 20%,
+    color-mix(in srgb, var(--color-earth) 45%, var(--color-border)) 80%,
+    transparent
+  );
+}
+
+.hero-rule-short {
+  width: 5rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0;
 }
 
 .hero-headline {
-  font-family: var(--font-body);
-  font-size: clamp(1.75rem, 5vw, 2.25rem);
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 5vw, 2.15rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  color: var(--color-forest);
 }
 
 .hero-sub {
   font-size: 0.9rem;
   color: var(--color-mist);
   line-height: 1.65;
-  margin-top: 0.85rem;
+  margin-top: 0.9rem;
   max-width: 28rem;
   margin-left: auto;
   margin-right: auto;
 }
 
 .hero-mission {
-  font-size: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
   font-weight: 500;
-  color: var(--color-gold);
-  margin-top: 1rem;
-  font-style: italic;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-gold-dim);
+  margin-top: 1.1rem;
 }
 
 /* Info sections */
 
 .info-section {
-  padding-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .info-heading {
-  font-family: var(--font-body);
-  font-size: 1.1rem;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--color-forest);
   margin-bottom: 1rem;
 }
 
@@ -221,10 +234,11 @@ body::before {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(212, 168, 83, 0.12);
-  border: 1px solid rgba(212, 168, 83, 0.25);
-  color: var(--color-gold);
-  font-size: 0.7rem;
+  background: color-mix(in srgb, var(--color-leaf) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-leaf) 30%, var(--color-border));
+  color: var(--color-forest);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -233,6 +247,7 @@ body::before {
   font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 0.15rem;
+  color: var(--color-forest);
 }
 
 .step-body {
@@ -267,8 +282,8 @@ body::before {
   text-align: center;
   gap: 0.85rem;
   padding: 1.5rem 1rem;
-  background: var(--color-ink);
-  border: 1px dashed var(--color-border);
+  background: color-mix(in srgb, var(--color-leaf) 4%, var(--color-surface));
+  border: 1px dashed color-mix(in srgb, var(--color-earth) 25%, var(--color-border));
   border-radius: 0.85rem;
 }
 
@@ -286,8 +301,8 @@ body::before {
   border-radius: 1.25rem;
   padding: 1.5rem;
   box-shadow:
-    0 0 0 1px rgba(212, 168, 83, 0.06),
-    0 24px 48px rgba(0, 0, 0, 0.4);
+    0 1px 0 color-mix(in srgb, var(--color-gold) 25%, transparent),
+    0 16px 40px rgba(30, 58, 47, 0.08);
 }
 
 .vault-header {
@@ -295,19 +310,21 @@ body::before {
 }
 
 .vault-eyebrow {
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-gold-dim);
+  color: var(--color-earth);
   margin-bottom: 0.35rem;
 }
 
 .vault-title {
-  font-family: var(--font-body);
-  font-size: 1.15rem;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
   line-height: 1.25;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.03em;
+  color: var(--color-forest);
 }
 
 .stats-row {
@@ -325,7 +342,7 @@ body::before {
 }
 
 .stat {
-  background: var(--color-ink);
+  background: color-mix(in srgb, var(--color-paper) 65%, var(--color-surface));
   border: 1px solid var(--color-border);
   border-radius: 0.65rem;
   padding: 0.65rem 0.7rem;
@@ -345,13 +362,14 @@ body::before {
   font-weight: 600;
   margin-top: 0.25rem;
   font-variant-numeric: tabular-nums;
+  color: var(--color-forest);
 }
 
 .tab-row {
   display: flex;
   gap: 0.25rem;
   padding: 0.25rem;
-  background: var(--color-ink);
+  background: color-mix(in srgb, var(--color-paper) 70%, var(--color-surface));
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   margin-bottom: 1rem;
@@ -372,8 +390,8 @@ body::before {
 }
 
 .tab-active {
-  background: var(--color-gold);
-  color: var(--color-ink);
+  background: var(--color-forest);
+  color: var(--color-paper);
 }
 
 .form {
@@ -387,7 +405,7 @@ body::before {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 0.85rem;
-  background: var(--color-ink);
+  background: color-mix(in srgb, var(--color-paper) 65%, var(--color-surface));
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   transition: border-color 0.15s;
@@ -407,7 +425,7 @@ body::before {
   background: transparent;
   border: none;
   outline: none;
-  color: var(--color-paper);
+  color: var(--color-forest);
   font-size: 1.35rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -424,7 +442,7 @@ body::before {
   border-radius: 0.35rem;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  color: var(--color-gold);
+  color: var(--color-gold-dim);
   font-size: 0.65rem;
   font-weight: 700;
   cursor: pointer;
@@ -447,16 +465,16 @@ body::before {
   padding: 0.85rem;
   border: none;
   border-radius: 0.75rem;
-  background: var(--color-gold);
-  color: var(--color-ink);
+  background: var(--color-forest);
+  color: var(--color-paper);
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: opacity 0.15s, transform 0.1s, background 0.15s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.92;
+  background: color-mix(in srgb, var(--color-forest) 88%, var(--color-leaf));
 }
 
 .btn-primary:active:not(:disabled) {
@@ -470,7 +488,7 @@ body::before {
 
 .gas-hint {
   font-size: 0.7rem;
-  color: var(--color-gold);
+  color: var(--color-gold-dim);
   margin-top: -0.25rem;
 }
 
@@ -489,7 +507,7 @@ body::before {
 }
 
 .advanced-toggle:hover {
-  color: var(--color-paper);
+  color: var(--color-forest);
 }
 
 .advanced-option {
@@ -503,7 +521,7 @@ body::before {
 }
 
 .advanced-option input {
-  accent-color: var(--color-gold);
+  accent-color: var(--color-leaf);
 }
 
 .banner {
@@ -514,28 +532,28 @@ body::before {
 }
 
 .banner-info {
-  background: rgba(212, 168, 83, 0.1);
-  border: 1px solid rgba(212, 168, 83, 0.25);
-  color: var(--color-paper);
+  background: color-mix(in srgb, var(--color-leaf) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-leaf) 25%, var(--color-border));
+  color: var(--color-forest);
 }
 
 .banner-warn {
-  background: rgba(212, 168, 83, 0.08);
-  border: 1px solid rgba(212, 168, 83, 0.3);
-  color: var(--color-gold);
+  background: color-mix(in srgb, var(--color-gold) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-gold) 35%, var(--color-border));
+  color: var(--color-gold-dim);
   margin-bottom: 0.75rem;
 }
 
 .banner-error {
-  background: rgba(196, 92, 92, 0.1);
-  border: 1px solid rgba(196, 92, 92, 0.3);
-  color: #e8a0a0;
+  background: rgba(196, 92, 92, 0.08);
+  border: 1px solid rgba(196, 92, 92, 0.25);
+  color: #a84848;
 }
 
 .banner-success {
-  background: rgba(92, 184, 122, 0.1);
-  border: 1px solid rgba(92, 184, 122, 0.3);
-  color: #9ed4b0;
+  background: color-mix(in srgb, var(--color-leaf) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-leaf) 30%, var(--color-border));
+  color: var(--color-forest);
 }
 
 .banner-link {
@@ -558,10 +576,10 @@ body::before {
 }
 
 .vault-footer a {
-  color: var(--color-gold-dim);
+  color: var(--color-earth);
   text-decoration: none;
 }
 
 .vault-footer a:hover {
-  color: var(--color-gold);
+  color: var(--color-gold-dim);
 }
