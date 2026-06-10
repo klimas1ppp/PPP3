@@ -10,6 +10,7 @@ import {
   type TxPhase,
   type VaultState,
 } from "@/hooks/use-vault";
+import { GasReserveModal, type GasReservePrompt } from "@/components/gas-reserve-modal";
 import { Switch } from "@/components/switch";
 import { ThemedConnectButton } from "@/components/themed-connect-button";
 import { useState } from "react";
@@ -130,22 +131,59 @@ function DepositPanel({
 }) {
   const [amount, setAmount] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [gasReservePrompt, setGasReservePrompt] = useState<GasReservePrompt | null>(null);
+  const [checkingGas, setCheckingGas] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const wei = toUnits(amount, VAULT.asset.decimals);
   const insufficient = wei > vault.walletBalance;
   const gasBlocker = deposit.depositBlocker(amount);
   const blocked = insufficient || Boolean(gasBlocker);
 
+  const submitDeposit = async (value: string) => {
+    setLocalError(null);
+    setCheckingGas(true);
+    try {
+      const check = await deposit.checkUsdcGasReserve(value);
+      if (!check.ok) {
+        if (check.suggestedAmount > 0n) {
+          setGasReservePrompt({
+            requestedAmount: toUnits(value, VAULT.asset.decimals),
+            suggestedAmount: check.suggestedAmount,
+            reserve: check.reserve,
+          });
+        } else {
+          setLocalError(check.message);
+        }
+        return;
+      }
+      setAmount("");
+      await deposit.deposit(value);
+    } finally {
+      setCheckingGas(false);
+    }
+  };
+
   return (
     <div className="form">
       <AmountField
         value={amount}
         onChange={setAmount}
-        onMax={() => setAmount(vault.walletBalance > 0n ? trimUnits(vault.walletBalance, VAULT.asset.decimals) : "")}
+        onMax={() => {
+          void (async () => {
+            if (vault.walletBalance <= 0n) {
+              setAmount("");
+              return;
+            }
+            const max = await deposit.maxDepositAmount();
+            setAmount(max > 0n ? trimUnits(max, VAULT.asset.decimals) : "");
+          })();
+        }}
         symbol={VAULT.asset.symbol}
         hint={`Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
         error={insufficient ? "Insufficient balance" : undefined}
       />
+      {localError && <Banner tone="error">{localError}</Banner>}
       {gasBlocker && !insufficient && wei > 0n && (
         <Banner tone="warn">{gasBlocker}</Banner>
       )}
@@ -159,21 +197,30 @@ function DepositPanel({
         disabled={
           deposit.state.phase === "success"
             ? false
-            : wei <= 0n || blocked || deposit.busy
+            : wei <= 0n || blocked || deposit.busy || checkingGas
         }
         onClick={() => {
           if (deposit.state.phase === "success") {
             deposit.reset();
             return;
           }
-          if (deposit.busy || wei <= 0n || blocked) return;
-          const value = amount;
-          setAmount("");
-          void deposit.deposit(value);
+          if (deposit.busy || checkingGas || wei <= 0n || blocked) return;
+          void submitDeposit(amount);
         }}
       >
-        {btnLabel(deposit.state.phase, "Deposit")}
+        {checkingGas ? "Checking…" : btnLabel(deposit.state.phase, "Deposit")}
       </button>
+      {gasReservePrompt && (
+        <GasReserveModal
+          prompt={gasReservePrompt}
+          onCancel={() => setGasReservePrompt(null)}
+          onConfirm={() => {
+            const suggested = trimUnits(gasReservePrompt.suggestedAmount, VAULT.asset.decimals);
+            setAmount(suggested);
+            setGasReservePrompt(null);
+          }}
+        />
+      )}
       <div className="advanced">
         <button
           type="button"

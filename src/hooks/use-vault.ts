@@ -22,10 +22,15 @@ import {
 } from "@/lib/deposit-sequential";
 import { confirmBatch, peekBatchTxHash, waitForTxHash } from "@/lib/confirm-tx";
 import {
+  MIN_ETH_FOR_GAS,
   preflightDeposit,
   resolveDepositRoute,
   syncDepositBlocker,
 } from "@/lib/deposit-preflight";
+import {
+  estimateUsdcGasReserve,
+  maxDepositWithUsdcGas,
+} from "@/lib/estimate-usdc-gas";
 import { humanizeError, toUnits } from "@/lib/format";
 import {
   detectWalletProfile,
@@ -194,16 +199,78 @@ type VaultTxInput = Pick<
   "address" | "allowance" | "deposited" | "walletBalance" | "ethBalance" | "refreshBalances" | "refetch"
 >;
 
+export type GasReserveCheck =
+  | { ok: true }
+  | {
+      ok: false;
+      suggestedAmount: bigint;
+      reserve: bigint;
+      message: string;
+    };
+
 export function useDeposit(
   vault: VaultTxInput,
   profile: WalletDepositProfile | null,
   payWithEth: boolean
 ) {
   const [state, setState] = useState<ActionState>({ phase: "idle" });
+  const gasReserveCache = useRef<{ key: string; reserve: bigint } | null>(null);
   const { writeContractAsync } = useWriteContract();
 
   const useUsdcPath = prefersUsdcGas(profile, payWithEth);
   const depositRoute = resolveDepositRoute(profile, payWithEth, useUsdcPath);
+
+  const needsUsdcGasReserve = useCallback(() => {
+    return useUsdcPath && vault.ethBalance < MIN_ETH_FOR_GAS;
+  }, [useUsdcPath, vault.ethBalance]);
+
+  const getGasReserve = useCallback(async (): Promise<bigint> => {
+    if (!vault.address || !needsUsdcGasReserve()) return 0n;
+    const key = `${vault.address}:${vault.walletBalance}:${vault.allowance}`;
+    if (gasReserveCache.current?.key === key) return gasReserveCache.current.reserve;
+    const reserve = await estimateUsdcGasReserve(
+      vault.address,
+      vault.walletBalance,
+      vault.allowance
+    );
+    gasReserveCache.current = { key, reserve };
+    return reserve;
+  }, [vault.address, vault.walletBalance, vault.allowance, needsUsdcGasReserve]);
+
+  const maxDepositAmount = useCallback(async (): Promise<bigint> => {
+    if (!needsUsdcGasReserve()) return vault.walletBalance;
+    const reserve = await getGasReserve();
+    return maxDepositWithUsdcGas(vault.walletBalance, reserve);
+  }, [vault.walletBalance, needsUsdcGasReserve, getGasReserve]);
+
+  const checkUsdcGasReserve = useCallback(
+    async (amount: string): Promise<GasReserveCheck> => {
+      if (!needsUsdcGasReserve()) return { ok: true };
+      const wei = toUnits(amount, VAULT.asset.decimals);
+      if (wei <= 0n) return { ok: true };
+
+      const reserve = await getGasReserve();
+      const max = maxDepositWithUsdcGas(vault.walletBalance, reserve);
+      if (wei <= max) return { ok: true };
+
+      if (max <= 0n) {
+        return {
+          ok: false,
+          suggestedAmount: 0n,
+          reserve,
+          message: "Not enough USDC to cover both a deposit and the network fee.",
+        };
+      }
+
+      return {
+        ok: false,
+        suggestedAmount: max,
+        reserve,
+        message: "Deposit amount is too high — reserve USDC for the network fee.",
+      };
+    },
+    [needsUsdcGasReserve, getGasReserve, vault.walletBalance]
+  );
 
   const submitDepositSequential = useCallback(
     async (amount: string) => {
@@ -283,6 +350,18 @@ export function useDeposit(
       const wei = toUnits(amount, VAULT.asset.decimals);
       if (wei <= 0n) return;
 
+      const gasCheck = await checkUsdcGasReserve(amount);
+      if (!gasCheck.ok) {
+        setState({
+          phase: "error",
+          error:
+            gasCheck.suggestedAmount > 0n
+              ? "Deposit amount is too high — reserve USDC for the network fee."
+              : gasCheck.message,
+        });
+        return;
+      }
+
       const route = resolveDepositRoute(profile, payWithEth, useUsdcPath);
 
       const preflight = await preflightDeposit({
@@ -321,6 +400,7 @@ export function useDeposit(
       useUsdcPath,
       depositBatch,
       submitDepositSequential,
+      checkUsdcGasReserve,
     ]
   );
 
@@ -380,6 +460,9 @@ export function useDeposit(
     willUseUsdcGas: useUsdcPath,
     gasHint: depositGasHint(profile, useUsdcPath),
     depositRoute,
+    maxDepositAmount,
+    checkUsdcGasReserve,
+    needsUsdcGasReserve: needsUsdcGasReserve(),
     depositBlocker: (amount: string) => {
       const wei = toUnits(amount, VAULT.asset.decimals);
       return syncDepositBlocker({
