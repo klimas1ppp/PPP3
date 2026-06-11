@@ -16,7 +16,7 @@ import {
   writeDepositWithPermit,
 } from "@/lib/deposit-sequential";
 import { waitForTxHash } from "@/lib/confirm-tx";
-import { preflightDeposit, syncDepositBlocker } from "@/lib/deposit-preflight";
+import { preflightDeposit } from "@/lib/deposit-preflight";
 import { humanizeError, toUnits } from "@/lib/format";
 import { getWalletProvider } from "@/lib/wallet-profile";
 import { BASE_RPC_URLS } from "@/lib/wagmi-config";
@@ -273,14 +273,6 @@ export function useDeposit(vault: VaultTxInput) {
     deposit,
     reset,
     busy,
-    depositBlocker: (amount: string) => {
-      const wei = toUnits(amount, VAULT.asset.decimals);
-      return syncDepositBlocker({
-        amount: wei,
-        walletBalance: vault.walletBalance,
-        ethBalance: vault.ethBalance,
-      });
-    },
   };
 }
 

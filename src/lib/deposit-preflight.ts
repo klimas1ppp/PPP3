@@ -38,23 +38,6 @@ function humanizeSimError(err: unknown): string {
   return line.length > 140 ? `${line.slice(0, 137)}…` : line;
 }
 
-export function syncDepositBlocker({
-  amount,
-  walletBalance,
-  ethBalance,
-}: {
-  amount: bigint;
-  walletBalance: bigint;
-  ethBalance: bigint;
-}): string | null {
-  if (amount <= 0n) return null;
-  if (amount > walletBalance) return "Insufficient USDC balance.";
-  if (ethBalance < MIN_ETH_FOR_GAS) {
-    return "Not enough ETH on Base for gas. Add a small amount of ETH to your wallet.";
-  }
-  return null;
-}
-
 /** Simulate via eth_call — works on all standard Base RPC nodes. */
 async function simulateDepositSteps(
   address: Address,
@@ -91,8 +74,11 @@ export async function preflightDeposit({
   walletBalance: bigint;
   ethBalance: bigint;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
-  const sync = syncDepositBlocker({ amount, walletBalance, ethBalance });
-  if (sync) return { ok: false, message: sync };
+  if (amount <= 0n) return { ok: false, message: "Enter an amount." };
+  if (amount > walletBalance) return { ok: false, message: "Insufficient USDC balance." };
+  if (ethBalance < MIN_ETH_FOR_GAS) {
+    return { ok: false, message: "Not enough ETH on Base for gas. Add a small amount of ETH to your wallet." };
+  }
 
   try {
     await simulateDepositSteps(address, amount, allowance);

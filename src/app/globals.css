@@ -672,34 +672,6 @@ body::before {
   cursor: not-allowed;
 }
 
-.gas-hint {
-  font-size: 0.7rem;
-  color: var(--color-gold-dim);
-  margin-top: -0.25rem;
-}
-
-.advanced {
-  margin-top: 0.25rem;
-}
-
-.advanced-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--color-mist);
-  font-size: 0.68rem;
-  cursor: pointer;
-  opacity: 0.85;
-}
-
-.advanced-toggle:hover {
-  color: var(--color-forest);
-}
-
-.advanced-option {
-  margin-top: 0.45rem;
-}
-
 /* Green/gold switch */
 
 .ppp-switch-label {

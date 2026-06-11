@@ -140,8 +140,7 @@ function DepositPanel({
 
   const wei = toUnits(amount, VAULT.asset.decimals);
   const insufficient = wei > vault.walletBalance;
-  const gasBlocker = deposit.depositBlocker(amount);
-  const blocked = insufficient || Boolean(gasBlocker);
+  const blocked = insufficient;
 
   return (
     <div className="form">
@@ -155,9 +154,6 @@ function DepositPanel({
         hint={`Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
         error={insufficient ? "Insufficient balance" : undefined}
       />
-      {gasBlocker && !insufficient && wei > 0n && (
-        <Banner tone="warn">{gasBlocker}</Banner>
-      )}
       <TxStatus state={deposit.state} verb="Deposit" onDone={() => { deposit.reset(); }} />
       <button
         type="button"
