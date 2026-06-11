@@ -11,35 +11,19 @@ import {
 import { VAULT } from "@/config";
 import { erc20Abi, vaultAbi } from "@/lib/abi";
 import {
-  buildDepositCalls,
-  createEip5792WalletClient,
-  sendDepositBatch,
-} from "@/lib/deposit-batch";
-import {
   writeApprove,
   writeDeposit,
   writeDepositWithPermit,
 } from "@/lib/deposit-sequential";
-import { confirmBatch, peekBatchTxHash, waitForTxHash } from "@/lib/confirm-tx";
-import {
-  MIN_ETH_FOR_GAS,
-  preflightDeposit,
-  resolveDepositRoute,
-  syncDepositBlocker,
-} from "@/lib/deposit-preflight";
-import {
-  estimateUsdcGasReserve,
-  maxDepositWithUsdcGas,
-} from "@/lib/estimate-usdc-gas";
+import { waitForTxHash } from "@/lib/confirm-tx";
+import { preflightDeposit, syncDepositBlocker } from "@/lib/deposit-preflight";
 import { humanizeError, toUnits } from "@/lib/format";
-import {
-  detectWalletProfile,
-  depositGasHint,
-  prefersUsdcGas,
-  type WalletDepositProfile,
-} from "@/lib/wallet-profile";
+import { getWalletProvider } from "@/lib/wallet-profile";
+import { BASE_RPC_URLS } from "@/lib/wagmi-config";
 
 export type VaultState = ReturnType<typeof useVault>;
+
+const BASE_CHAIN_HEX = `0x${VAULT.chainId.toString(16)}` as const;
 
 /** Re-read balances after tx — RPC can lag behind the receipt. */
 async function refreshWithRetry(refetch: () => Promise<unknown>) {
@@ -59,42 +43,11 @@ type ActionState = {
   phase: TxPhase;
   error?: string;
   hash?: `0x${string}`;
-  batchId?: string;
-  gasPaidInUsdc?: boolean;
 };
-
-export function useWalletProfile(address: `0x${string}` | undefined, isConnected: boolean) {
-  const [profile, setProfile] = useState<WalletDepositProfile | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!address || !isConnected) {
-      setProfile(null);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    void detectWalletProfile(address)
-      .then((p) => {
-        if (!cancelled) setProfile(p);
-      })
-      .catch(() => {
-        if (!cancelled) setProfile(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [address, isConnected]);
-
-  return { profile, loading };
-}
 
 export function useVault() {
   const { address, isConnected: wagmiConnected, chainId, status } = useAccount();
-  const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
 
   // Wallet extensions can briefly report disconnected while a tx is signing.
   const lastAddress = useRef<`0x${string}` | undefined>(undefined);
@@ -142,9 +95,40 @@ export function useVault() {
     void refreshWithRetry(refetch);
   }, [refetch]);
 
-  const switchToBase = useCallback(() => {
-    switchChain({ chainId: VAULT.chainId });
-  }, [switchChain]);
+  const switchToBase = useCallback(async () => {
+    try {
+      await switchChainAsync({ chainId: VAULT.chainId });
+      return;
+    } catch {
+      // wagmi switch can fail on mobile — fall through to direct provider request
+    }
+
+    const provider = await getWalletProvider();
+    try {
+      await provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: BASE_CHAIN_HEX }],
+      });
+    } catch (e) {
+      const code = (e as { code?: number })?.code;
+      if (code === 4902) {
+        await provider.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: BASE_CHAIN_HEX,
+              chainName: VAULT.chainName,
+              nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+              rpcUrls: [...BASE_RPC_URLS],
+              blockExplorerUrls: [VAULT.explorer],
+            },
+          ],
+        });
+        return;
+      }
+      throw e;
+    }
+  }, [switchChainAsync]);
 
   return {
     address: stableAddress,
@@ -170,7 +154,7 @@ function useTxConfirm(
   successPhase: TxPhase = "success"
 ) {
   useEffect(() => {
-    if (state.phase !== "pending" || !state.hash || state.batchId) return;
+    if (state.phase !== "pending" || !state.hash) return;
 
     let cancelled = false;
     void waitForTxHash(state.hash)
@@ -191,7 +175,7 @@ function useTxConfirm(
     return () => {
       cancelled = true;
     };
-  }, [state.hash, state.phase, state.batchId, setState, onConfirmed, successPhase]);
+  }, [state.hash, state.phase, setState, onConfirmed, successPhase]);
 }
 
 type VaultTxInput = Pick<
@@ -199,88 +183,30 @@ type VaultTxInput = Pick<
   "address" | "allowance" | "deposited" | "walletBalance" | "ethBalance" | "refreshBalances" | "refetch"
 >;
 
-export type GasReserveCheck =
-  | { ok: true }
-  | {
-      ok: false;
-      suggestedAmount: bigint;
-      reserve: bigint;
-      message: string;
-    };
-
-export function useDeposit(
-  vault: VaultTxInput,
-  profile: WalletDepositProfile | null,
-  payWithEth: boolean
-) {
+export function useDeposit(vault: VaultTxInput) {
   const [state, setState] = useState<ActionState>({ phase: "idle" });
-  const gasReserveCache = useRef<{ key: string; reserve: bigint } | null>(null);
   const { writeContractAsync } = useWriteContract();
 
-  const useUsdcPath = prefersUsdcGas(profile, payWithEth);
-  const depositRoute = resolveDepositRoute(profile, payWithEth, useUsdcPath);
-
-  const needsUsdcGasReserve = useCallback(() => {
-    return useUsdcPath && vault.ethBalance < MIN_ETH_FOR_GAS;
-  }, [useUsdcPath, vault.ethBalance]);
-
-  const getGasReserve = useCallback(async (): Promise<bigint> => {
-    if (!vault.address || !needsUsdcGasReserve()) return 0n;
-    const key = `${vault.address}:${vault.walletBalance}:${vault.allowance}`;
-    if (gasReserveCache.current?.key === key) return gasReserveCache.current.reserve;
-    const reserve = await estimateUsdcGasReserve(
-      vault.address,
-      vault.walletBalance,
-      vault.allowance
-    );
-    gasReserveCache.current = { key, reserve };
-    return reserve;
-  }, [vault.address, vault.walletBalance, vault.allowance, needsUsdcGasReserve]);
-
-  const maxDepositAmount = useCallback(async (): Promise<bigint> => {
-    if (!needsUsdcGasReserve()) return vault.walletBalance;
-    const reserve = await getGasReserve();
-    return maxDepositWithUsdcGas(vault.walletBalance, reserve);
-  }, [vault.walletBalance, needsUsdcGasReserve, getGasReserve]);
-
-  const checkUsdcGasReserve = useCallback(
-    async (amount: string): Promise<GasReserveCheck> => {
-      if (!needsUsdcGasReserve()) return { ok: true };
-      const wei = toUnits(amount, VAULT.asset.decimals);
-      if (wei <= 0n) return { ok: true };
-
-      const reserve = await getGasReserve();
-      const max = maxDepositWithUsdcGas(vault.walletBalance, reserve);
-      if (wei <= max) return { ok: true };
-
-      if (max <= 0n) {
-        return {
-          ok: false,
-          suggestedAmount: 0n,
-          reserve,
-          message: "Not enough USDC to cover both a deposit and the network fee.",
-        };
-      }
-
-      return {
-        ok: false,
-        suggestedAmount: max,
-        reserve,
-        message: "Deposit amount is too high — reserve USDC for the network fee.",
-      };
-    },
-    [needsUsdcGasReserve, getGasReserve, vault.walletBalance]
-  );
-
-  const submitDepositSequential = useCallback(
+  const deposit = useCallback(
     async (amount: string) => {
       if (!vault.address) return;
       const wei = toUnits(amount, VAULT.asset.decimals);
       if (wei <= 0n) return;
 
-      const gasPaidInUsdc = prefersUsdcGas(profile, payWithEth);
-      setState({ phase: "signing", gasPaidInUsdc });
+      const preflight = await preflightDeposit({
+        address: vault.address,
+        amount: wei,
+        allowance: vault.allowance,
+        walletBalance: vault.walletBalance,
+        ethBalance: vault.ethBalance,
+      });
 
+      if (!preflight.ok) {
+        setState({ phase: "error", error: preflight.message });
+        return;
+      }
+
+      setState({ phase: "signing" });
       const write = writeContractAsync as Parameters<typeof writeDeposit>[0];
 
       try {
@@ -294,137 +220,27 @@ export function useDeposit(
           } catch (permitErr) {
             const msg = humanizeError(permitErr);
             if (/cancelled|rejected/i.test(msg)) throw permitErr;
-            // USDC-gas wallets need a single tx — don't split into approve + deposit
-            if (gasPaidInUsdc) throw permitErr;
 
-            setState({ phase: "signing", gasPaidInUsdc: false });
+            setState({ phase: "signing" });
             const approveHash = await writeApprove(write, wei);
-            setState({ phase: "pending", hash: approveHash, gasPaidInUsdc: false });
+            setState({ phase: "pending", hash: approveHash });
             await waitForTxHash(approveHash);
             await vault.refetch();
-            setState({ phase: "signing", gasPaidInUsdc: false });
+            setState({ phase: "signing" });
             hash = await writeDeposit(write, vault.address, wei);
           }
         }
 
-        setState({ phase: "pending", hash, gasPaidInUsdc });
+        setState({ phase: "pending", hash });
       } catch (e) {
         setState({ phase: "error", error: humanizeError(e) });
       }
     },
-    [vault.address, vault.allowance, vault.refetch, profile, payWithEth, writeContractAsync]
-  );
-
-  const depositBatch = useCallback(
-    async (amount: string, useUsdcGas: boolean) => {
-      if (!vault.address || !profile) return;
-      const wei = toUnits(amount, VAULT.asset.decimals);
-      if (wei <= 0n) return;
-
-      setState({ phase: "signing", gasPaidInUsdc: useUsdcGas });
-
-      const walletClient = await createEip5792WalletClient(vault.address);
-      const calls = await buildDepositCalls({
-        walletClient,
-        address: vault.address,
-        amount: wei,
-        allowance: vault.allowance,
-      });
-
-      const { batchId } = await sendDepositBatch({
-        address: vault.address,
-        calls,
-        profile,
-        useUsdcGas,
-      });
-
-      const peekHash = await peekBatchTxHash(batchId, vault.address);
-      setState({ phase: "pending", batchId, hash: peekHash, gasPaidInUsdc: useUsdcGas });
-    },
-    [vault.address, vault.allowance, profile]
-  );
-
-  const deposit = useCallback(
-    async (amount: string) => {
-      if (!vault.address) return;
-      const wei = toUnits(amount, VAULT.asset.decimals);
-      if (wei <= 0n) return;
-
-      const gasCheck = await checkUsdcGasReserve(amount);
-      if (!gasCheck.ok) {
-        setState({
-          phase: "error",
-          error:
-            gasCheck.suggestedAmount > 0n
-              ? "Deposit amount is too high — reserve USDC for the network fee."
-              : gasCheck.message,
-        });
-        return;
-      }
-
-      const route = resolveDepositRoute(profile, payWithEth, useUsdcPath);
-
-      const preflight = await preflightDeposit({
-        address: vault.address,
-        amount: wei,
-        allowance: vault.allowance,
-        walletBalance: vault.walletBalance,
-        ethBalance: vault.ethBalance,
-        route,
-        profile,
-        useUsdcGas: useUsdcPath,
-      });
-
-      if (!preflight.ok) {
-        setState({ phase: "error", error: preflight.message });
-        return;
-      }
-
-      try {
-        if (route === "usdc-batch") {
-          await depositBatch(amount, true);
-        } else {
-          await submitDepositSequential(amount);
-        }
-      } catch (e) {
-        setState({ phase: "error", error: humanizeError(e) });
-      }
-    },
-    [
-      vault.address,
-      vault.allowance,
-      vault.walletBalance,
-      vault.ethBalance,
-      profile,
-      payWithEth,
-      useUsdcPath,
-      depositBatch,
-      submitDepositSequential,
-      checkUsdcGasReserve,
-    ]
+    [vault.address, vault.allowance, vault.walletBalance, vault.ethBalance, vault.refetch, writeContractAsync]
   );
 
   useEffect(() => {
-    if (state.phase !== "pending" || !state.batchId || !vault.address) return;
-
-    let cancelled = false;
-    void confirmBatch(state.batchId, vault.address)
-      .then((hash) => {
-        if (cancelled) return;
-        setState((s) => ({ ...s, phase: "success", hash }));
-        vault.refreshBalances();
-      })
-      .catch((e) => {
-        if (!cancelled) setState({ phase: "error", error: humanizeError(e) });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [state.phase, state.batchId, vault.address, vault.refreshBalances]);
-
-  useEffect(() => {
-    if (state.phase !== "pending" || state.batchId || !state.hash) return;
+    if (state.phase !== "pending" || !state.hash) return;
 
     let cancelled = false;
     void waitForTxHash(state.hash)
@@ -445,7 +261,7 @@ export function useDeposit(
     return () => {
       cancelled = true;
     };
-  }, [state.phase, state.batchId, state.hash, vault.refreshBalances]);
+  }, [state.phase, state.hash, vault.refreshBalances]);
 
   const reset = useCallback(() => {
     setState({ phase: "idle" });
@@ -457,21 +273,12 @@ export function useDeposit(
     deposit,
     reset,
     busy,
-    willUseUsdcGas: useUsdcPath,
-    gasHint: depositGasHint(profile, useUsdcPath),
-    depositRoute,
-    maxDepositAmount,
-    checkUsdcGasReserve,
-    needsUsdcGasReserve: needsUsdcGasReserve(),
     depositBlocker: (amount: string) => {
       const wei = toUnits(amount, VAULT.asset.decimals);
       return syncDepositBlocker({
         amount: wei,
         walletBalance: vault.walletBalance,
         ethBalance: vault.ethBalance,
-        route: depositRoute,
-        profile,
-        useUsdcGas: useUsdcPath,
       });
     },
   };

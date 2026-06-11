@@ -2,8 +2,7 @@ import { createPublicClient, http, parseEther, type Address } from "viem";
 import { base } from "viem/chains";
 import { simulateContract } from "viem/actions";
 import { VAULT } from "@/config";
-import { erc20Abi, vaultAbi } from "@/lib/abi";
-import type { WalletDepositProfile } from "@/lib/wallet-profile";
+import { vaultAbi } from "@/lib/abi";
 
 /** Rough minimum ETH on Base to cover at least one deposit tx. */
 export const MIN_ETH_FOR_GAS = parseEther("0.00003");
@@ -12,21 +11,6 @@ const publicClient = createPublicClient({
   chain: base,
   transport: http("https://mainnet.base.org"),
 });
-
-export type DepositRoute = "usdc-batch" | "eth-batch" | "eth-sequential";
-
-export function resolveDepositRoute(
-  profile: WalletDepositProfile | null | undefined,
-  payWithEth: boolean,
-  useUsdcPath: boolean
-): DepositRoute {
-  if (!useUsdcPath) return "eth-sequential";
-  // Rabby GasAccount + MetaMask gas-included: USDC gas on a single standard tx
-  if (profile?.isRabby || profile?.isMetaMask) return "eth-sequential";
-  // Smart-account wallets: EIP-5792 batch + wallet paymaster
-  if (profile?.supportsSendCalls && profile?.supportsUsdcGas) return "usdc-batch";
-  return "eth-sequential";
-}
 
 function humanizeSimError(err: unknown): string {
   const msg =
@@ -39,7 +23,7 @@ function humanizeSimError(err: unknown): string {
     return "Unable to simulate transaction. Please try again.";
   }
   if (/insufficient funds/i.test(line)) {
-    return "Not enough ETH on Base for gas. Add a small amount of ETH, or pay gas in USDC via your wallet if supported.";
+    return "Not enough ETH on Base for gas. Add a small amount of ETH to your wallet.";
   }
   if (/exceeds balance|insufficient balance|transfer amount exceeds/i.test(line)) {
     return "Insufficient USDC balance.";
@@ -58,25 +42,16 @@ export function syncDepositBlocker({
   amount,
   walletBalance,
   ethBalance,
-  route,
-  profile,
-  useUsdcGas,
 }: {
   amount: bigint;
   walletBalance: bigint;
   ethBalance: bigint;
-  route: DepositRoute;
-  profile?: WalletDepositProfile | null;
-  useUsdcGas?: boolean;
 }): string | null {
   if (amount <= 0n) return null;
   if (amount > walletBalance) return "Insufficient USDC balance.";
-
-  const needsEth = route === "eth-sequential" && !useUsdcGas;
-  if (needsEth && ethBalance < MIN_ETH_FOR_GAS) {
-    return "Not enough ETH on Base for gas. Add a small amount of ETH, or pay gas in USDC via your wallet if supported.";
+  if (ethBalance < MIN_ETH_FOR_GAS) {
+    return "Not enough ETH on Base for gas. Add a small amount of ETH to your wallet.";
   }
-
   return null;
 }
 
@@ -109,27 +84,14 @@ export async function preflightDeposit({
   allowance,
   walletBalance,
   ethBalance,
-  route,
-  profile,
-  useUsdcGas,
 }: {
   address: Address;
   amount: bigint;
   allowance: bigint;
   walletBalance: bigint;
   ethBalance: bigint;
-  route: DepositRoute;
-  profile?: WalletDepositProfile | null;
-  useUsdcGas?: boolean;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
-  const sync = syncDepositBlocker({
-    amount,
-    walletBalance,
-    ethBalance,
-    route,
-    profile,
-    useUsdcGas,
-  });
+  const sync = syncDepositBlocker({ amount, walletBalance, ethBalance });
   if (sync) return { ok: false, message: sync };
 
   try {

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { useEffect, useMemo, useState } from "react";
 import { WagmiProvider } from "wagmi";
+import { WalletSessionGuard } from "@/components/wallet-session-guard";
 import { getRainbowKitTheme } from "@/lib/rainbowkit-theme";
 import { wagmiConfig } from "@/lib/wagmi-config";
 
@@ -49,7 +50,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={rainbowKitTheme}>{children}</RainbowKitProvider>
+        <RainbowKitProvider theme={rainbowKitTheme}>
+          <WalletSessionGuard />
+          {children}
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

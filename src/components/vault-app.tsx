@@ -5,21 +5,16 @@ import { fmtAmount, fmtUsd, humanizeError, sanitizeAmount, toUnits, trimUnits } 
 import {
   useDeposit,
   useVault,
-  useWalletProfile,
   useWithdraw,
   type TxPhase,
   type VaultState,
 } from "@/hooks/use-vault";
-import { GasReserveModal, type GasReservePrompt } from "@/components/gas-reserve-modal";
-import { Switch } from "@/components/switch";
 import { ThemedConnectButton } from "@/components/themed-connect-button";
 import { useState } from "react";
 
 export function VaultApp() {
   const vault = useVault();
-  const { profile } = useWalletProfile(vault.address, vault.isConnected);
-  const [payWithEth, setPayWithEth] = useState(false);
-  const deposit = useDeposit(vault, profile, payWithEth);
+  const deposit = useDeposit(vault);
   const withdraw = useWithdraw(vault);
   const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
 
@@ -57,7 +52,7 @@ export function VaultApp() {
             ))}
           </div>
           {tab === "deposit" ? (
-            <DepositPanel vault={vault} deposit={deposit} payWithEth={payWithEth} onPayWithEthChange={setPayWithEth} />
+            <DepositPanel vault={vault} deposit={deposit} />
           ) : (
             <WithdrawPanel vault={vault} withdraw={withdraw} />
           )}
@@ -85,10 +80,26 @@ function ConnectNudge() {
 }
 
 function SwitchNetworkButton({ vault }: { vault: VaultState }) {
+  const [error, setError] = useState<string | null>(null);
+
   return (
-    <button type="button" className="btn-primary" onClick={vault.switchToBase} disabled={vault.isSwitching}>
-      {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
-    </button>
+    <div className="form">
+      <p className="connect-nudge-text">
+        Your wallet is connected on another network. Switch to {VAULT.chainName} to deposit.
+      </p>
+      {error && <Banner tone="error">{error}</Banner>}
+      <button
+        type="button"
+        className="btn-primary"
+        disabled={vault.isSwitching}
+        onClick={() => {
+          setError(null);
+          void vault.switchToBase().catch((e) => setError(humanizeError(e)));
+        }}
+      >
+        {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
+      </button>
+    </div>
   );
 }
 
@@ -121,48 +132,16 @@ function Stat({ label, value, loading }: { label: string; value: string; loading
 function DepositPanel({
   vault,
   deposit,
-  payWithEth,
-  onPayWithEthChange,
 }: {
   vault: VaultState;
   deposit: ReturnType<typeof useDeposit>;
-  payWithEth: boolean;
-  onPayWithEthChange: (v: boolean) => void;
 }) {
   const [amount, setAmount] = useState("");
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [gasReservePrompt, setGasReservePrompt] = useState<GasReservePrompt | null>(null);
-  const [checkingGas, setCheckingGas] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
 
   const wei = toUnits(amount, VAULT.asset.decimals);
   const insufficient = wei > vault.walletBalance;
   const gasBlocker = deposit.depositBlocker(amount);
   const blocked = insufficient || Boolean(gasBlocker);
-
-  const submitDeposit = async (value: string) => {
-    setLocalError(null);
-    setCheckingGas(true);
-    try {
-      const check = await deposit.checkUsdcGasReserve(value);
-      if (!check.ok) {
-        if (check.suggestedAmount > 0n) {
-          setGasReservePrompt({
-            requestedAmount: toUnits(value, VAULT.asset.decimals),
-            suggestedAmount: check.suggestedAmount,
-            reserve: check.reserve,
-          });
-        } else {
-          setLocalError(check.message);
-        }
-        return;
-      }
-      setAmount("");
-      await deposit.deposit(value);
-    } finally {
-      setCheckingGas(false);
-    }
-  };
 
   return (
     <div className="form">
@@ -170,25 +149,14 @@ function DepositPanel({
         value={amount}
         onChange={setAmount}
         onMax={() => {
-          void (async () => {
-            if (vault.walletBalance <= 0n) {
-              setAmount("");
-              return;
-            }
-            const max = await deposit.maxDepositAmount();
-            setAmount(max > 0n ? trimUnits(max, VAULT.asset.decimals) : "");
-          })();
+          setAmount(vault.walletBalance > 0n ? trimUnits(vault.walletBalance, VAULT.asset.decimals) : "");
         }}
         symbol={VAULT.asset.symbol}
         hint={`Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
         error={insufficient ? "Insufficient balance" : undefined}
       />
-      {localError && <Banner tone="error">{localError}</Banner>}
       {gasBlocker && !insufficient && wei > 0n && (
         <Banner tone="warn">{gasBlocker}</Banner>
-      )}
-      {deposit.gasHint && !deposit.busy && (
-        <p className="gas-hint">{deposit.gasHint}</p>
       )}
       <TxStatus state={deposit.state} verb="Deposit" onDone={() => { deposit.reset(); }} />
       <button
@@ -197,49 +165,21 @@ function DepositPanel({
         disabled={
           deposit.state.phase === "success"
             ? false
-            : wei <= 0n || blocked || deposit.busy || checkingGas
+            : wei <= 0n || blocked || deposit.busy
         }
         onClick={() => {
           if (deposit.state.phase === "success") {
             deposit.reset();
             return;
           }
-          if (deposit.busy || checkingGas || wei <= 0n || blocked) return;
-          void submitDeposit(amount);
+          if (deposit.busy || wei <= 0n || blocked) return;
+          const value = amount;
+          setAmount("");
+          void deposit.deposit(value);
         }}
       >
-        {checkingGas ? "Checking…" : btnLabel(deposit.state.phase, "Deposit")}
+        {btnLabel(deposit.state.phase, "Deposit")}
       </button>
-      {gasReservePrompt && (
-        <GasReserveModal
-          prompt={gasReservePrompt}
-          onCancel={() => setGasReservePrompt(null)}
-          onConfirm={() => {
-            const suggested = trimUnits(gasReservePrompt.suggestedAmount, VAULT.asset.decimals);
-            setAmount(suggested);
-            setGasReservePrompt(null);
-          }}
-        />
-      )}
-      <div className="advanced">
-        <button
-          type="button"
-          className="advanced-toggle"
-          onClick={() => setShowAdvanced((v) => !v)}
-          aria-expanded={showAdvanced}
-        >
-          Advanced {showAdvanced ? "▾" : "▸"}
-        </button>
-        {showAdvanced && (
-          <Switch
-            id="pay-with-eth"
-            checked={payWithEth}
-            onChange={onPayWithEthChange}
-            label="Pay with ETH"
-            className="advanced-option"
-          />
-        )}
-      </div>
     </div>
   );
 }
@@ -335,7 +275,7 @@ function TxStatus({
   verb,
   onDone,
 }: {
-  state: { phase: TxPhase; error?: string; hash?: `0x${string}`; gasPaidInUsdc?: boolean };
+  state: { phase: TxPhase; error?: string; hash?: `0x${string}` };
   verb: string;
   onDone: () => void;
 }) {
@@ -353,8 +293,7 @@ function TxStatus({
   if (state.phase === "success") {
     return (
       <Banner tone="success">
-        {verb} confirmed.
-        {state.gasPaidInUsdc ? " Gas paid in USDC." : ""}{" "}
+        {verb} confirmed.{" "}
         {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="banner-link">view tx</a>}{" "}
         <button type="button" className="banner-link" onClick={onDone}>done</button>
       </Banner>
