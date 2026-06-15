@@ -16,9 +16,8 @@ const body = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "PPP — Keep your principal, donate the yield",
-  description:
-    "Deposit USDC on Base. Keep your principal, donate the yield, and grow lasting impact in the Philippines.",
+  title: "PPP Charity Vault",
+  description: "Deposit USDC, keep your principal, Donate the yield.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
