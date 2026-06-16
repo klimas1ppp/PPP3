@@ -1,0 +1,44 @@
+PPP — PRINCIPAL-PRESERVING PHILANTHROPY
+PROJECT IMPACT REPORT
+
+Project:        Classroom Rebuild — Brooke's Point, Palawan
+Project ID:     PPP-2026-0221-SCHOOL
+Report date:    February 21, 2026
+Category:       Education
+
+------------------------------------------------------------
+1. SUMMARY
+------------------------------------------------------------
+After typhoon damage left an elementary classroom unusable,
+donated yield funded a new roof, structural repairs, 40 desks,
+and a full set of learning materials in Brooke's Point,
+southern Palawan. 140 students returned to safe, dry learning
+conditions.
+
+------------------------------------------------------------
+2. OUTCOMES
+------------------------------------------------------------
+- 140 students back in a safe classroom.
+- Construction overseen by the local parent-teacher association.
+- Every invoice published on-chain for full transparency.
+- Maintenance reserve set aside for ongoing upkeep.
+
+------------------------------------------------------------
+3. FUNDING
+------------------------------------------------------------
+Total yield deployed:        5,100 USDC
+  Roof & structural repair     2,800 USDC
+  Desks & chairs (40)          1,200 USDC
+  Books & supplies               700 USDC
+  Maintenance reserve            400 USDC
+
+All disbursements are recorded on-chain (Base) and verifiable.
+
+------------------------------------------------------------
+4. VERIFICATION
+------------------------------------------------------------
+GPS:            8.7811, 117.8347
+Local partner:  Brooke's Point Parent-Teacher Association
+Oversight:      PPP field coordinator + school administration
+
+This document is a demonstration artifact for the PPP project.

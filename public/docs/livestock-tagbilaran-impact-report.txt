@@ -1,0 +1,43 @@
+PPP — PRINCIPAL-PRESERVING PHILANTHROPY
+PROJECT IMPACT REPORT
+
+Project:        Goats & Poultry Micro-Farms — Roxas, Palawan
+Project ID:     PPP-2026-0402-LIVESTOCK
+Report date:    April 2, 2026
+Category:       Farming & Livestock
+
+------------------------------------------------------------
+1. SUMMARY
+------------------------------------------------------------
+A livestock starter program provided breeding goats, laying
+hens, feed, and veterinary care to 18 families (approx. 96
+individuals) in rural Roxas, central Palawan. Each household
+received husbandry training and a record-keeping system.
+
+------------------------------------------------------------
+2. OUTCOMES (first 8 weeks)
+------------------------------------------------------------
+- Families selling surplus eggs at the local market.
+- First independent income generated from the project.
+- "Pay-it-forward" herd model multiplies impact: the first
+  female offspring from each goat is passed to a new family.
+
+------------------------------------------------------------
+3. FUNDING
+------------------------------------------------------------
+Total yield deployed:        6,200 USDC
+  Breeding goats (24)          3,000 USDC
+  Laying hens & coops          1,500 USDC
+  Feed & veterinary care       1,100 USDC
+  Husbandry training             600 USDC
+
+All disbursements are recorded on-chain (Base) and verifiable.
+
+------------------------------------------------------------
+4. VERIFICATION
+------------------------------------------------------------
+GPS:            10.3072, 119.3447
+Local partner:  Roxas Agricultural Cooperative
+Oversight:      PPP field coordinator + municipal authority
+
+This document is a demonstration artifact for the PPP project.

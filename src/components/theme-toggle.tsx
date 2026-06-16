@@ -1,41 +1,37 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { Switch } from "@/components/switch";
+import { useEffect, useState } from 'react'
+import { useTheme } from 'next-themes'
+import { Moon, Sun } from 'lucide-react'
 
-export type Theme = "light" | "dark";
+export function ThemeToggle({ className = '' }: { className?: string }) {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
-function applyTheme(theme: Theme) {
-  document.documentElement.dataset.theme = theme;
-}
+  // Avoid hydration mismatch — the resolved theme is only known on the client.
+  useEffect(() => setMounted(true), [])
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("ppp-theme") as Theme | null;
-    const initial =
-      stored ??
-      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    setTheme(initial);
-    applyTheme(initial);
-    setReady(true);
-  }, []);
-
-  if (!ready) return <span className="theme-toggle-placeholder" aria-hidden />;
+  const isDark = resolvedTheme === 'dark'
 
   return (
-    <Switch
-      checked={theme === "dark"}
-      onChange={(on) => {
-        const next: Theme = on ? "dark" : "light";
-        setTheme(next);
-        applyTheme(next);
-        localStorage.setItem("ppp-theme", next);
-      }}
-      label="Dark theme"
-      className="theme-toggle"
-    />
-  );
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label={
+        mounted
+          ? isDark
+            ? 'Switch to light mode'
+            : 'Switch to dark mode'
+          : 'Toggle theme'
+      }
+      title={isDark ? 'Light mode' : 'Dark mode'}
+      className={`flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-card/40 text-foreground transition-colors hover:border-gold/50 hover:text-gold ${className}`}
+    >
+      {mounted && !isDark ? (
+        <Moon className="h-5 w-5" aria-hidden="true" />
+      ) : (
+        <Sun className="h-5 w-5" aria-hidden="true" />
+      )}
+    </button>
+  )
 }

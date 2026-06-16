@@ -4,8 +4,10 @@ import "@rainbow-me/rainbowkit/styles.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
+import { useMemo, useState } from "react";
 import { WagmiProvider } from "wagmi";
+import { ThemeProvider } from "@/components/theme-provider";
 import { WalletSessionGuard } from "@/components/wallet-session-guard";
 import { getRainbowKitTheme } from "@/lib/rainbowkit-theme";
 import { wagmiConfig } from "@/lib/wagmi-config";
@@ -20,41 +22,34 @@ const queryClient = new QueryClient({
   },
 });
 
-function useSiteTheme() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+function RainbowKitThemed({ children }: { children: React.ReactNode }) {
+  const { resolvedTheme } = useTheme();
+  const rainbowKitTheme = useMemo(
+    () => getRainbowKitTheme(resolvedTheme === "dark" ? "dark" : "light"),
+    [resolvedTheme],
+  );
 
-  useEffect(() => {
-    const read = () => {
-      const next = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-      setTheme(next);
-    };
-
-    read();
-
-    const observer = new MutationObserver(read);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  return theme;
+  return (
+    <RainbowKitProvider theme={rainbowKitTheme}>
+      <WalletSessionGuard />
+      {children}
+    </RainbowKitProvider>
+  );
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const siteTheme = useSiteTheme();
-  const rainbowKitTheme = useMemo(() => getRainbowKitTheme(siteTheme), [siteTheme]);
-
   return (
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={rainbowKitTheme}>
-          <WalletSessionGuard />
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={false}
+      disableTransitionOnChange
+    >
+      <WagmiProvider config={wagmiConfig}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitThemed>{children}</RainbowKitThemed>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </ThemeProvider>
   );
 }

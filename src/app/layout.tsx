@@ -1,38 +1,47 @@
-import type { Metadata } from "next";
-import { Cinzel, IBM_Plex_Sans } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const display = Cinzel({
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["500", "600", "700"],
 });
-
-const body = IBM_Plex_Sans({
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "PPP Charity Vault",
-  description: "Deposit USDC, keep your principal, Donate the yield.",
+  title: "PPP — Keep your principal, donate the yield",
+  description:
+    "A principal-preserving philanthropy for web3. Deposit USDC on Base, keep your principal, and donate the yield to sustainable impact in the Philippines.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
 };
 
-const themeScript = `(function(){try{var t=localStorage.getItem("ppp-theme");if(!t)t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}})();`;
+export const viewport: Viewport = {
+  colorScheme: "dark light",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0f2a1c" },
+    { media: "(prefers-color-scheme: light)", color: "#f3f1e7" },
+  ],
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} bg-background`}
+    >
+      <body className="font-sans antialiased">
         <Providers>{children}</Providers>
+        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   );

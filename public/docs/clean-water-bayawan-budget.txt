@@ -1,0 +1,14 @@
+PPP — CLEAN WATER WELL (TAYTAY, PALAWAN)
+DETAILED BUDGET BREAKDOWN — PPP-2026-0518-WATER
+
+Line item                         Amount (USDC)   Share
+--------------------------------------------------------
+Deep-bore well drilling                  3,600    42.9%
+Solar pump & panels                      2,400    28.6%
+Storage tank & piping                    1,600    19.0%
+Committee training                         800     9.5%
+--------------------------------------------------------
+TOTAL                                    8,400   100.0%
+
+Funded entirely by donated yield. Principal is never spent.
+Every transaction is published on-chain (Base) for audit.

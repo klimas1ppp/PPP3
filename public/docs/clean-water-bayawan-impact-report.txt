@@ -1,0 +1,44 @@
+PPP — PRINCIPAL-PRESERVING PHILANTHROPY
+PROJECT IMPACT REPORT
+
+Project:        Clean Water Well — Taytay, Palawan
+Project ID:     PPP-2026-0518-WATER
+Report date:    May 18, 2026
+Category:       Water Systems
+
+------------------------------------------------------------
+1. SUMMARY
+------------------------------------------------------------
+A deep-bore well, solar-powered pump, and community storage
+tank were installed in a coastal barangay near Taytay,
+northern Palawan. The system now delivers clean water to
+64 households (approx. 312 individuals) that previously
+relied on a contaminated creek more than an hour away on foot.
+
+------------------------------------------------------------
+2. OUTCOMES (first 30 days)
+------------------------------------------------------------
+- Reported waterborne illness among children dropped sharply.
+- Average ~2 hours/day per household reclaimed from water hauling.
+- Local water committee trained and operational.
+- Upkeep fund established and managed by the community.
+
+------------------------------------------------------------
+3. FUNDING
+------------------------------------------------------------
+Total yield deployed:        8,400 USDC
+  Deep-bore well drilling      3,600 USDC
+  Solar pump & panels          2,400 USDC
+  Storage tank & piping        1,600 USDC
+  Committee training             800 USDC
+
+All disbursements are recorded on-chain (Base) and verifiable.
+
+------------------------------------------------------------
+4. VERIFICATION
+------------------------------------------------------------
+GPS:            10.8131, 119.5101
+Local partner:  Barangay Water & Sanitation Committee
+Oversight:      PPP field coordinator + municipal authority
+
+This document is a demonstration artifact for the PPP project.

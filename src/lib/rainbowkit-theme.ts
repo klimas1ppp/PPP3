@@ -1,7 +1,7 @@
 import { darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
 import type { Theme } from "@rainbow-me/rainbowkit";
 
-const BODY_FONT = "var(--font-body)";
+const BODY_FONT = "var(--font-sans)";
 
 const SHARED_OPTS = {
   borderRadius: "medium" as const,
