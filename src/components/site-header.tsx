@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WalletButton } from "@/components/wallet-button";
 
@@ -68,14 +68,7 @@ export function SiteHeader() {
           className="flex items-center gap-2"
           onClick={() => setOpen(false)}
         >
-          <Image
-            src="/images/ppp-infinity-tree.png"
-            alt="PPP infinity tree logo"
-            width={28}
-            height={28}
-            priority
-            className="h-7 w-7 shrink-0 rounded-md shadow-[0_0_12px_oklch(0.79_0.13_88_/_0.2)] ring-1 ring-gold/20"
-          />
+          <BrandLogo size="sm" />
           <span className="font-heading text-xl font-semibold leading-none tracking-wide text-gold">
             PPP
           </span>

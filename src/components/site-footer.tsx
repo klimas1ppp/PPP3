@@ -1,5 +1,5 @@
-import Image from 'next/image'
 import Link from 'next/link'
+import { BrandLogo } from '@/components/brand-logo'
 
 const FOOTER_LINKS = [
   { label: 'How it works', href: '/#how' },
@@ -22,13 +22,7 @@ export function SiteFooter() {
       />
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 text-center sm:px-6">
         <div className="flex items-center gap-3">
-          <Image
-            src="/images/ppp-infinity-tree.png"
-            alt="PPP infinity tree logo"
-            width={231}
-            height={231}
-            className="h-20 w-auto rounded-xl shadow-[0_0_20px_oklch(0.79_0.13_88_/_0.3)] ring-1 ring-gold/20"
-          />
+          <BrandLogo size="lg" />
           <span className="flex flex-col items-start leading-none">
             <span className="font-heading text-3xl font-semibold text-gold">
               PPP
