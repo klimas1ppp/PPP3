@@ -1,11 +1,11 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import {
   coinbaseWallet,
-  metaMaskWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { base } from "wagmi/chains";
 import { fallback, http } from "wagmi";
+import { metaMaskDirectWallet } from "@/lib/metamask-direct-wallet";
 
 export const APP_NAME = "PPP Charity Vault";
 
@@ -44,7 +44,7 @@ export const wagmiConfig = getDefaultConfig({
   wallets: [
     {
       groupName: "Popular",
-      wallets: [coinbaseWallet, walletConnectWallet, metaMaskWallet],
+      wallets: [metaMaskDirectWallet, coinbaseWallet, walletConnectWallet],
     },
   ],
   walletConnectParameters: {

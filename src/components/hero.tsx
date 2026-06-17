@@ -38,43 +38,14 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 pt-20"
+      className="relative flex min-h-[100svh] flex-col items-center justify-start overflow-hidden px-4 pb-16 pt-[9vh] sm:pt-[11vh] md:pt-[12vh]"
     >
-      {/* Tree stays in the background — shrinks and softens, never removed */}
-      <div
-        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center transition-[transform,opacity] duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-        style={{
-          opacity: treeSettled ? 0.52 : 1,
-          transform: treeSettled ? 'scale(0.58)' : 'scale(1)',
-          visibility: containerOpacity <= 0.01 ? 'hidden' : 'visible',
-        }}
-        aria-hidden="true"
-      >
-        <div
-          className="relative h-[min(72vh,40rem)] w-full max-w-3xl transition-opacity duration-[1400ms]"
-          style={{ opacity: treeSettled ? 0.7 : 1 }}
-        >
-          <TreeScene fade={fadeRef} subtle={treeSettled} />
-          <FloatingMotifs />
-        </div>
-      </div>
-
-      <div
-        className="pointer-events-none absolute inset-0 z-[1]"
-        style={{
-          background:
-            'radial-gradient(ellipse at center, transparent 30%, var(--background) 88%)',
-          opacity: treeSettled ? 0.85 : 0.55,
-        }}
-        aria-hidden="true"
-      />
-
       <div
         className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center text-center"
         style={{ opacity: containerOpacity }}
       >
         <p
-          className="hero-rise mb-4 rounded-full border border-gold/30 bg-card/40 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold-soft backdrop-blur-sm"
+          className="hero-rise mb-3 rounded-full border border-gold/30 bg-card/40 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold-soft backdrop-blur-sm"
           style={{ animationDelay: '1.4s' }}
         >
           Principal-preserving philanthropy
@@ -89,12 +60,24 @@ export function Hero() {
           <span className="text-gold gold-glow">donate the yield.</span>
         </h1>
 
-        {/* Space for the tree to show through between title and copy */}
+        {/* Tree sits between headline and body copy */}
         <div
-          className="w-full transition-[height] duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{ height: treeSettled ? 'clamp(10rem, 24vw, 14rem)' : 'clamp(14rem, 34vh, 18rem)' }}
+          className="hero-rise relative my-3 w-full transition-[height,max-width,opacity] duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)] sm:my-4"
+          style={{
+            animationDelay: '1.9s',
+            height: treeSettled
+              ? 'clamp(10rem, 26vw, 15rem)'
+              : 'clamp(15rem, 36vh, 21rem)',
+            maxWidth: treeSettled
+              ? 'clamp(10rem, 26vw, 15rem)'
+              : 'min(100%, 28rem)',
+            opacity: treeSettled ? 0.72 : 1,
+          }}
           aria-hidden="true"
-        />
+        >
+          <TreeScene fade={fadeRef} subtle={treeSettled} />
+          <FloatingMotifs />
+        </div>
 
         <p
           className="hero-rise mx-auto max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
