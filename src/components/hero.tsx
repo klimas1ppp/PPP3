@@ -8,11 +8,11 @@ import { FloatingMotifs } from './decor/floating-motifs'
 export function Hero() {
   const fadeRef = useRef(1)
   const [containerOpacity, setContainerOpacity] = useState(1)
-  const [treeCompact, setTreeCompact] = useState(false)
+  const [treeSettled, setTreeSettled] = useState(false)
   const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
-    const shrinkTimer = window.setTimeout(() => setTreeCompact(true), 2800)
+    const shrinkTimer = window.setTimeout(() => setTreeSettled(true), 2800)
     return () => window.clearTimeout(shrinkTimer)
   }, [])
 
@@ -40,6 +40,35 @@ export function Hero() {
       id="top"
       className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 pt-20"
     >
+      {/* Tree stays in the background — shrinks and softens, never removed */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center transition-[transform,opacity] duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{
+          opacity: treeSettled ? 0.52 : 1,
+          transform: treeSettled ? 'scale(0.58)' : 'scale(1)',
+          visibility: containerOpacity <= 0.01 ? 'hidden' : 'visible',
+        }}
+        aria-hidden="true"
+      >
+        <div
+          className="relative h-[min(72vh,40rem)] w-full max-w-3xl transition-opacity duration-[1400ms]"
+          style={{ opacity: treeSettled ? 0.7 : 1 }}
+        >
+          <TreeScene fade={fadeRef} subtle={treeSettled} />
+          <FloatingMotifs />
+        </div>
+      </div>
+
+      <div
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, transparent 30%, var(--background) 88%)',
+          opacity: treeSettled ? 0.85 : 0.55,
+        }}
+        aria-hidden="true"
+      />
+
       <div
         className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center text-center"
         style={{ opacity: containerOpacity }}
@@ -60,19 +89,12 @@ export function Hero() {
           <span className="text-gold gold-glow">donate the yield.</span>
         </h1>
 
+        {/* Space for the tree to show through between title and copy */}
         <div
-          className="hero-rise relative my-4 w-full transition-[height,max-width,margin] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] sm:my-6"
-          style={{
-            animationDelay: '1.9s',
-            height: treeCompact ? 'clamp(9rem, 22vw, 13rem)' : 'clamp(16rem, 42vh, 22rem)',
-            maxWidth: treeCompact ? 'clamp(9rem, 22vw, 13rem)' : 'min(100%, 28rem)',
-          }}
-        >
-          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <TreeScene fade={fadeRef} compact={treeCompact} />
-            <FloatingMotifs />
-          </div>
-        </div>
+          className="w-full transition-[height] duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ height: treeSettled ? 'clamp(10rem, 24vw, 14rem)' : 'clamp(14rem, 34vh, 18rem)' }}
+          aria-hidden="true"
+        />
 
         <p
           className="hero-rise mx-auto max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"

@@ -377,8 +377,19 @@
   }
 }
 
-/* RainbowKit connect modal above fixed site header (z-50) */
-[data-rk] {
-  position: relative;
-  z-index: 2147483646;
+/* RainbowKit — full-width primary connect in deposit panel */
+.wallet-connect-primary > div {
+  width: 100%;
+}
+.wallet-connect-primary button {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  touch-action: manipulation;
+}
+
+/* Modal portal above fixed header; do NOT style all [data-rk] — breaks mobile taps */
+body > div:has([role="dialog"]) {
+  z-index: 2147483647 !important;
 }

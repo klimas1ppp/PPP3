@@ -1,14 +1,16 @@
-import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import {
   coinbaseWallet,
-  rabbyWallet,
+  metaMaskWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { base } from "wagmi/chains";
-import { createConfig, fallback, http } from "wagmi";
-import { metaMaskExtensionWallet } from "@/lib/metamask-extension-wallet";
+import { fallback, http } from "wagmi";
 
 export const APP_NAME = "PPP Charity Vault";
+
+export const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://ppp-pt.vercel.app";
 
 export const WALLET_CONNECT_PROJECT_ID =
   process.env.NEXT_PUBLIC_WALLET_CONNECT ??
@@ -25,28 +27,34 @@ export const BASE_RPC_URLS = ["https://mainnet.base.org", "https://base.llamarpc
 
 const projectId = WALLET_CONNECT_PROJECT_ID || "ppp-charity-vault";
 
-const connectors = connectorsForWallets(
-  [
+if (!WALLET_CONNECT_PROJECT_ID && typeof window !== "undefined") {
+  console.warn(
+    "[PPP] Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID for reliable WalletConnect / MetaMask mobile connections.",
+  );
+}
+
+/** Standard RainbowKit config — best mobile deep-link + WalletConnect behavior. */
+export const wagmiConfig = getDefaultConfig({
+  appName: APP_NAME,
+  appDescription: "Deposit USDC, keep your principal, donate the yield.",
+  appUrl: APP_URL,
+  appIcon: `${APP_URL}/favicon.svg`,
+  projectId,
+  chains: [base],
+  wallets: [
     {
-      groupName: "Recommended",
-      wallets: [
-        metaMaskExtensionWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-        rabbyWallet,
-      ],
+      groupName: "Popular",
+      wallets: [coinbaseWallet, walletConnectWallet, metaMaskWallet],
     },
   ],
-  {
-    appName: APP_NAME,
-    projectId,
+  walletConnectParameters: {
+    metadata: {
+      name: APP_NAME,
+      description: "Principal-preserving philanthropy on Base",
+      url: APP_URL,
+      icons: [`${APP_URL}/favicon.svg`],
+    },
   },
-);
-
-/** Hoisted outside components — avoids WalletConnect duplicate-init under StrictMode. */
-export const wagmiConfig = createConfig({
-  connectors,
-  chains: [base],
   transports: {
     [base.id]: fallback(
       BASE_RPC_URLS.map((url, i) => http(url, { key: `base-${i}` })),

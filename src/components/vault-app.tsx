@@ -9,7 +9,7 @@ import {
   type TxPhase,
   type VaultState,
 } from "@/hooks/use-vault";
-import { ThemedConnectButton } from "@/components/themed-connect-button";
+import { WalletButton } from "@/components/wallet-button";
 import { Info, Loader2 } from "lucide-react";
 import { useState } from "react";
 
@@ -84,7 +84,7 @@ function ConnectNudge() {
         Connect your wallet to deposit USDC and put your savings to work for good — your principal
         stays fully yours.
       </p>
-      <ThemedConnectButton variant="primary" />
+      <WalletButton variant="primary" />
     </div>
   );
 }

@@ -22,7 +22,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://ppp-pt.vercel.app";
+const APP_URL_FROM_ENV = process.env.NEXT_PUBLIC_APP_URL ?? "https://ppp-pt.vercel.app";
 
 function RainbowKitThemed({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
@@ -36,7 +36,7 @@ function RainbowKitThemed({ children }: { children: React.ReactNode }) {
       theme={rainbowKitTheme}
       appInfo={{
         appName: APP_NAME,
-        learnMoreUrl: APP_URL,
+        learnMoreUrl: APP_URL_FROM_ENV,
       }}
     >
       <WalletSessionGuard />
