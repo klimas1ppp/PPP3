@@ -146,8 +146,8 @@ export function SiteHeader() {
             className="mx-4 mt-2 flex flex-col gap-1 rounded-2xl border border-border/60 bg-card p-4 shadow-[0_24px_60px_-20px_oklch(0_0_0_/_0.6)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-2 flex justify-center [&_button]:w-full">
-              <WalletButton />
+            <div className="mb-2 flex justify-center">
+              <WalletButton fullWidth />
             </div>
             {NAV.map((item) => {
               const active = isActive(item);

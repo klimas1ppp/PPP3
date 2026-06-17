@@ -35,6 +35,11 @@ export function getRainbowKitTheme(mode: "light" | "dark"): Theme {
     return withOverrides(
       base,
       {
+        connectButtonBackground: "rgba(40, 64, 53, 0.4)",
+        connectButtonInnerBackground: "transparent",
+        connectButtonText: "#f0d878",
+        connectButtonBackgroundError: "rgba(180, 60, 50, 0.85)",
+        connectButtonTextError: "#fff",
         modalBackground: "#182a22",
         modalBorder: "#264035",
         modalBackdrop: "rgba(12, 35, 25, 0.55)",
@@ -71,6 +76,11 @@ export function getRainbowKitTheme(mode: "light" | "dark"): Theme {
   return withOverrides(
     base,
     {
+      connectButtonBackground: "rgba(255, 252, 247, 0.85)",
+      connectButtonInnerBackground: "transparent",
+      connectButtonText: "#1e3a2f",
+      connectButtonBackgroundError: "#c44",
+      connectButtonTextError: "#fff",
       modalBackground: "#fffcf7",
       modalBorder: "#ddd2c0",
       modalBackdrop: "rgba(12, 35, 25, 0.55)",
