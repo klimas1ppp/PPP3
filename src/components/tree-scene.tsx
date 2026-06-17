@@ -7,7 +7,7 @@ import * as THREE from 'three'
 type FadeRef = MutableRefObject<number>
 
 // ---- Golden tree billboard (chroma-keyed logo) ----
-function TreeBillboard({ fade }: { fade: FadeRef }) {
+function TreeBillboard({ fade, compact = false }: { fade: FadeRef; compact?: boolean }) {
   const texture = useLoader(THREE.TextureLoader, '/images/tree-logo.png')
   const groupRef = useRef<THREE.Group>(null)
   const matRef = useRef<THREE.ShaderMaterial>(null)
@@ -54,8 +54,9 @@ function TreeBillboard({ fade }: { fade: FadeRef }) {
     if (matRef.current) matRef.current.uniforms.opacity.value = fade.current
     if (groupRef.current) {
       const t = state.clock.elapsedTime
-      groupRef.current.position.y = Math.sin(t * 0.6) * 0.08
-      const s = 0.85 + fade.current * 0.15
+      groupRef.current.position.y = Math.sin(t * 0.6) * (compact ? 0.04 : 0.08)
+      const base = compact ? 0.62 : 0.85
+      const s = base + fade.current * (compact ? 0.08 : 0.15)
       groupRef.current.scale.setScalar(s)
     }
   })
@@ -63,7 +64,7 @@ function TreeBillboard({ fade }: { fade: FadeRef }) {
   return (
     <group ref={groupRef}>
       <mesh material={material}>
-        <planeGeometry args={[3.45, 4.18]} />
+        <planeGeometry args={compact ? [2.6, 3.15] : [3.45, 4.18]} />
         <primitive object={material} ref={matRef} attach="material" />
       </mesh>
     </group>
@@ -71,7 +72,7 @@ function TreeBillboard({ fade }: { fade: FadeRef }) {
 }
 
 // ---- 3D orbital rings ----
-function Orbits({ fade }: { fade: FadeRef }) {
+function Orbits({ fade, compact = false }: { fade: FadeRef; compact?: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
   const rings = useMemo(
     () => [
@@ -87,7 +88,7 @@ function Orbits({ fade }: { fade: FadeRef }) {
     groupRef.current.children.forEach((child, i) => {
       child.rotation.z += delta * rings[i].speed
     })
-    groupRef.current.scale.setScalar(0.8 + fade.current * 0.2)
+    groupRef.current.scale.setScalar((compact ? 0.55 : 0.8) + fade.current * (compact ? 0.12 : 0.2))
   })
 
   return (
@@ -110,7 +111,7 @@ function Orbits({ fade }: { fade: FadeRef }) {
 }
 
 // ---- Golden particle field ----
-function Particles({ fade, count = 700 }: { fade: FadeRef; count?: number }) {
+function Particles({ fade, count = 700, compact = false }: { fade: FadeRef; count?: number; compact?: boolean }) {
   const pointsRef = useRef<THREE.Points>(null)
   const matRef = useRef<THREE.PointsMaterial>(null)
 
@@ -133,7 +134,7 @@ function Particles({ fade, count = 700 }: { fade: FadeRef; count?: number }) {
       const t = state.clock.elapsedTime
       pointsRef.current.position.y = Math.sin(t * 0.3) * 0.1
     }
-    if (matRef.current) matRef.current.opacity = 0.85 * fade.current
+    if (matRef.current) matRef.current.opacity = (compact ? 0.55 : 0.85) * fade.current
   })
 
   return (
@@ -179,19 +180,20 @@ function ParallaxGroup({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>
 }
 
-export function TreeScene({ fade }: { fade: FadeRef }) {
+export function TreeScene({ fade, compact = false }: { fade: FadeRef; compact?: boolean }) {
   return (
     <Canvas
-      camera={{ position: [0, 0, 8], fov: 42 }}
+      className="h-full w-full"
+      camera={{ position: [0, 0, compact ? 9.5 : 8], fov: compact ? 36 : 42 }}
       gl={{ antialias: true, alpha: true }}
       dpr={[1, 2]}
     >
       <ambientLight intensity={0.8} />
       <pointLight position={[4, 4, 6]} intensity={1.2} color="#e7c66a" />
       <ParallaxGroup>
-        <TreeBillboard fade={fade} />
-        <Orbits fade={fade} />
-        <Particles fade={fade} />
+        <TreeBillboard fade={fade} compact={compact} />
+        <Orbits fade={fade} compact={compact} />
+        <Particles fade={fade} compact={compact} />
       </ParallaxGroup>
     </Canvas>
   )

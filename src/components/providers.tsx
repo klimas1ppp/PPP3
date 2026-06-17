@@ -10,7 +10,7 @@ import { WagmiProvider } from "wagmi";
 import { ThemeProvider } from "@/components/theme-provider";
 import { WalletSessionGuard } from "@/components/wallet-session-guard";
 import { getRainbowKitTheme } from "@/lib/rainbowkit-theme";
-import { wagmiConfig } from "@/lib/wagmi-config";
+import { APP_NAME, wagmiConfig } from "@/lib/wagmi-config";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +22,8 @@ const queryClient = new QueryClient({
   },
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://ppp-pt.vercel.app";
+
 function RainbowKitThemed({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
   const rainbowKitTheme = useMemo(
@@ -30,7 +32,13 @@ function RainbowKitThemed({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <RainbowKitProvider theme={rainbowKitTheme}>
+    <RainbowKitProvider
+      theme={rainbowKitTheme}
+      appInfo={{
+        appName: APP_NAME,
+        learnMoreUrl: APP_URL,
+      }}
+    >
       <WalletSessionGuard />
       {children}
     </RainbowKitProvider>

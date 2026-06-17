@@ -376,3 +376,9 @@
     animation: none;
   }
 }
+
+/* RainbowKit connect modal above fixed site header (z-50) */
+[data-rk] {
+  position: relative;
+  z-index: 2147483646;
+}

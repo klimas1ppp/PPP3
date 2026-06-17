@@ -1,16 +1,16 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
   coinbaseWallet,
-  metaMaskWallet,
   rabbyWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { base } from "wagmi/chains";
-import { fallback, http } from "wagmi";
+import { createConfig, fallback, http } from "wagmi";
+import { metaMaskExtensionWallet } from "@/lib/metamask-extension-wallet";
 
-const APP_NAME = "PPP Charity Vault";
+export const APP_NAME = "PPP Charity Vault";
 
-const WALLET_CONNECT_PROJECT_ID =
+export const WALLET_CONNECT_PROJECT_ID =
   process.env.NEXT_PUBLIC_WALLET_CONNECT ??
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??
   "";
@@ -23,21 +23,34 @@ coinbaseWallet.preference = {
 
 export const BASE_RPC_URLS = ["https://mainnet.base.org", "https://base.llamarpc.com"];
 
-/** Hoisted outside components — avoids WalletConnect duplicate-init under StrictMode. */
-export const wagmiConfig = getDefaultConfig({
-  appName: APP_NAME,
-  projectId: WALLET_CONNECT_PROJECT_ID || "ppp-charity-vault",
-  chains: [base],
-  wallets: [
+const projectId = WALLET_CONNECT_PROJECT_ID || "ppp-charity-vault";
+
+const connectors = connectorsForWallets(
+  [
     {
       groupName: "Recommended",
-      wallets: [metaMaskWallet, walletConnectWallet, rabbyWallet, coinbaseWallet],
+      wallets: [
+        metaMaskExtensionWallet,
+        coinbaseWallet,
+        walletConnectWallet,
+        rabbyWallet,
+      ],
     },
   ],
+  {
+    appName: APP_NAME,
+    projectId,
+  },
+);
+
+/** Hoisted outside components — avoids WalletConnect duplicate-init under StrictMode. */
+export const wagmiConfig = createConfig({
+  connectors,
+  chains: [base],
   transports: {
     [base.id]: fallback(
       BASE_RPC_URLS.map((url, i) => http(url, { key: `base-${i}` })),
-      { retryCount: 2 }
+      { retryCount: 2 },
     ),
   },
   ssr: true,
