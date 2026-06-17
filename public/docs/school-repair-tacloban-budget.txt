@@ -1,0 +1,14 @@
+PPP — STORM-DAMAGED CLASSROOM REPAIR (BROOKE'S POINT, PALAWAN)
+DETAILED BUDGET BREAKDOWN — PPP-2026-0221-SCHOOL
+
+Line item                         Amount (USDC)   Share
+--------------------------------------------------------
+Roof & structural repair                 2,800    54.9%
+Desks & chairs (40)                      1,200    23.5%
+Books & supplies                           700    13.7%
+Maintenance reserve                        400     7.8%
+--------------------------------------------------------
+TOTAL                                    5,100   100.0%
+
+Funded entirely by donated yield. Principal is never spent.
+Every transaction is published on-chain (Base) for audit.

@@ -92,6 +92,27 @@ export function YieldMechanics() {
             </Reveal>
           ))}
         </div>
+
+        <Reveal
+          delay={200}
+          className="mt-12 flex flex-wrap items-center justify-center gap-4 font-mono text-sm"
+        >
+          {[
+            ['~ 4.8% APY', 'blended lending yield'],
+            ['100%', 'principal withdrawable'],
+            ['0%', 'fees on your deposit'],
+          ].map(([big, small]) => (
+            <div
+              key={big}
+              className="rounded-xl border border-border/60 bg-card/50 px-5 py-3 text-center backdrop-blur-sm"
+            >
+              <span className="tabular block text-xl font-semibold text-gold">
+                {big}
+              </span>
+              <span className="text-xs text-muted-foreground">{small}</span>
+            </div>
+          ))}
+        </Reveal>
       </div>
     </section>
   )

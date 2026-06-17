@@ -3,7 +3,9 @@ import Link from 'next/link'
 
 const FOOTER_LINKS = [
   { label: 'How it works', href: '/#how' },
+  { label: 'Live stats', href: '/#stats' },
   { label: 'Impact', href: '/#impact' },
+  { label: 'Reports', href: '/reports' },
   { label: 'Contact', href: '/contact' },
 ]
 

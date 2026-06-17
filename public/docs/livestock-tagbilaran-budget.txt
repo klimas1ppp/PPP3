@@ -1,0 +1,14 @@
+PPP — GOATS & POULTRY MICRO-FARMS (ROXAS, PALAWAN)
+DETAILED BUDGET BREAKDOWN — PPP-2026-0402-LIVESTOCK
+
+Line item                         Amount (USDC)   Share
+--------------------------------------------------------
+Breeding goats (24)                      3,000    48.4%
+Laying hens & coops                      1,500    24.2%
+Feed & veterinary care                   1,100    17.7%
+Husbandry training                         600     9.7%
+--------------------------------------------------------
+TOTAL                                    6,200   100.0%
+
+Funded entirely by donated yield. Principal is never spent.
+Every transaction is published on-chain (Base) for audit.

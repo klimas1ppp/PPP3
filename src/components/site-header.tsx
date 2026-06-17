@@ -11,7 +11,10 @@ import { WalletButton } from "@/components/wallet-button";
 const NAV = [
   { label: "How it works", href: "/#how" },
   { label: "Yield", href: "/#yield" },
+  { label: "Live stats", href: "/#stats" },
   { label: "Impact", href: "/#impact" },
+  { label: "Roadmap", href: "/#roadmap" },
+  { label: "Reports", href: "/reports", underline: true },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -90,7 +93,7 @@ export function SiteHeader() {
                   active
                     ? "font-semibold text-gold underline decoration-gold/70"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                } ${"underline" in item && item.underline ? "underline decoration-gold/40" : ""}`}
               >
                 {item.label}
               </Link>
