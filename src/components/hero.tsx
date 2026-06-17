@@ -8,13 +8,7 @@ import { FloatingMotifs } from './decor/floating-motifs'
 export function Hero() {
   const fadeRef = useRef(1)
   const [containerOpacity, setContainerOpacity] = useState(1)
-  const [treeSettled, setTreeSettled] = useState(false)
   const rafRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    const shrinkTimer = window.setTimeout(() => setTreeSettled(true), 2800)
-    return () => window.clearTimeout(shrinkTimer)
-  }, [])
 
   useEffect(() => {
     const onScroll = () => {
@@ -38,19 +32,41 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative flex min-h-[100svh] flex-col items-center justify-start overflow-hidden px-4 pb-16 pt-[9vh] sm:pt-[11vh] md:pt-[12vh]"
+      className="relative flex min-h-[100svh] flex-col items-center overflow-hidden px-4 pb-24 pt-16 sm:pt-20"
     >
+      {/* Fixed 3D layer that fades on scroll */}
       <div
-        className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center text-center"
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          opacity: containerOpacity,
+          visibility: containerOpacity <= 0.01 ? 'hidden' : 'visible',
+        }}
+        aria-hidden="true"
+      >
+        <TreeScene fade={fadeRef} />
+        <FloatingMotifs />
+      </div>
+
+      {/* Radial vignette behind copy for legibility */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, transparent 45%, var(--background) 92%)',
+        }}
+        aria-hidden="true"
+      />
+
+      <div
+        className="relative z-10 mx-auto max-w-3xl text-center"
         style={{ opacity: containerOpacity }}
       >
         <p
-          className="hero-rise mb-3 rounded-full border border-gold/30 bg-card/40 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold-soft backdrop-blur-sm"
+          className="hero-rise mb-4 inline-block rounded-full border border-gold/30 bg-card/40 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold-soft backdrop-blur-sm"
           style={{ animationDelay: '1.4s' }}
         >
           Principal-preserving philanthropy
         </p>
-
         <h1
           className="hero-rise text-balance font-heading text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
           style={{ animationDelay: '1.7s' }}
@@ -59,35 +75,15 @@ export function Hero() {
           <br />
           <span className="text-gold gold-glow">donate the yield.</span>
         </h1>
-
-        {/* Tree sits between headline and body copy */}
-        <div
-          className="hero-rise relative my-3 w-full transition-[height,max-width,opacity] duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)] sm:my-4"
-          style={{
-            animationDelay: '1.9s',
-            height: treeSettled
-              ? 'clamp(10rem, 26vw, 15rem)'
-              : 'clamp(15rem, 36vh, 21rem)',
-            maxWidth: treeSettled
-              ? 'clamp(10rem, 26vw, 15rem)'
-              : 'min(100%, 28rem)',
-            opacity: treeSettled ? 0.72 : 1,
-          }}
-          aria-hidden="true"
-        >
-          <TreeScene fade={fadeRef} subtle={treeSettled} />
-          <FloatingMotifs />
-        </div>
-
-        <p
-          className="hero-rise mx-auto max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
-          style={{ animationDelay: '2.0s' }}
-        >
-          The seed is in your hands. Deposit USDC, withdraw anytime, and let the
-          yield grow real, sustainable impact for communities in the
-          Philippines.
-        </p>
       </div>
+
+      <p
+        className="hero-rise relative z-10 mx-auto mt-auto max-w-xl text-pretty text-center text-base leading-relaxed text-muted-foreground sm:text-lg"
+        style={{ animationDelay: '2.0s', opacity: containerOpacity }}
+      >
+        The seed is in your hands. Deposit USDC, withdraw anytime, and let the
+        yield grow real, sustainable impact for communities in the Philippines.
+      </p>
 
       <div
         className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-muted-foreground"

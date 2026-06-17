@@ -7,7 +7,7 @@ import * as THREE from 'three'
 type FadeRef = MutableRefObject<number>
 
 // ---- Golden tree billboard (chroma-keyed logo) ----
-function TreeBillboard({ fade, subtle = false }: { fade: FadeRef; subtle?: boolean }) {
+function TreeBillboard({ fade }: { fade: FadeRef }) {
   const texture = useLoader(THREE.TextureLoader, '/images/tree-logo.png')
   const groupRef = useRef<THREE.Group>(null)
   const matRef = useRef<THREE.ShaderMaterial>(null)
@@ -22,7 +22,7 @@ function TreeBillboard({ fade, subtle = false }: { fade: FadeRef; subtle?: boole
         threshold: { value: 0.34 },
         smoothing: { value: 0.07 },
         opacity: { value: 1 },
-        glow: { value: subtle ? 0.92 : 1.18 },
+        glow: { value: 1.18 },
       },
       vertexShader: /* glsl */ `
         varying vec2 vUv;
@@ -51,15 +51,11 @@ function TreeBillboard({ fade, subtle = false }: { fade: FadeRef; subtle?: boole
   }, [texture])
 
   useFrame((state) => {
-    if (matRef.current) {
-      matRef.current.uniforms.opacity.value = fade.current * (subtle ? 0.72 : 1)
-      matRef.current.uniforms.glow.value = subtle ? 0.92 : 1.18
-    }
+    if (matRef.current) matRef.current.uniforms.opacity.value = fade.current
     if (groupRef.current) {
       const t = state.clock.elapsedTime
-      groupRef.current.position.y = Math.sin(t * 0.6) * (subtle ? 0.05 : 0.08)
-      const base = subtle ? 0.78 : 0.85
-      const s = base + fade.current * 0.12
+      groupRef.current.position.y = Math.sin(t * 0.6) * 0.08
+      const s = 0.85 + fade.current * 0.15
       groupRef.current.scale.setScalar(s)
     }
   })
@@ -67,7 +63,7 @@ function TreeBillboard({ fade, subtle = false }: { fade: FadeRef; subtle?: boole
   return (
     <group ref={groupRef}>
       <mesh material={material}>
-        <planeGeometry args={subtle ? [3.1, 3.75] : [3.45, 4.18]} />
+        <planeGeometry args={[3.45, 4.18]} />
         <primitive object={material} ref={matRef} attach="material" />
       </mesh>
     </group>
@@ -75,15 +71,15 @@ function TreeBillboard({ fade, subtle = false }: { fade: FadeRef; subtle?: boole
 }
 
 // ---- 3D orbital rings ----
-function Orbits({ fade, subtle = false }: { fade: FadeRef; subtle?: boolean }) {
+function Orbits({ fade }: { fade: FadeRef }) {
   const groupRef = useRef<THREE.Group>(null)
   const rings = useMemo(
     () => [
-      { r: 2.7, rot: [1.3, 0.2, 0.1], speed: 0.18, op: subtle ? 0.28 : 0.55 },
-      { r: 3.25, rot: [1.1, -0.5, 0.4], speed: -0.12, op: subtle ? 0.2 : 0.4 },
-      { r: 3.9, rot: [1.5, 0.6, -0.3], speed: 0.08, op: subtle ? 0.14 : 0.28 },
+      { r: 2.7, rot: [1.3, 0.2, 0.1], speed: 0.18, op: 0.55 },
+      { r: 3.25, rot: [1.1, -0.5, 0.4], speed: -0.12, op: 0.4 },
+      { r: 3.9, rot: [1.5, 0.6, -0.3], speed: 0.08, op: 0.28 },
     ],
-    [subtle],
+    [],
   )
 
   useFrame((state, delta) => {
@@ -91,22 +87,15 @@ function Orbits({ fade, subtle = false }: { fade: FadeRef; subtle?: boolean }) {
     groupRef.current.children.forEach((child, i) => {
       child.rotation.z += delta * rings[i].speed
     })
-    groupRef.current.scale.setScalar((subtle ? 0.68 : 0.8) + fade.current * 0.15)
+    groupRef.current.scale.setScalar(0.8 + fade.current * 0.2)
   })
 
   return (
     <group ref={groupRef}>
       {rings.map((ring, i) => (
-        <mesh
-          key={i}
-          rotation={ring.rot as [number, number, number]}
-        >
+        <mesh key={i} rotation={ring.rot as [number, number, number]}>
           <torusGeometry args={[ring.r, 0.012, 16, 160]} />
-          <meshBasicMaterial
-            color="#d8b14a"
-            transparent
-            opacity={ring.op}
-          />
+          <meshBasicMaterial color="#d8b14a" transparent opacity={ring.op} />
         </mesh>
       ))}
     </group>
@@ -114,7 +103,7 @@ function Orbits({ fade, subtle = false }: { fade: FadeRef; subtle?: boolean }) {
 }
 
 // ---- Golden particle field ----
-function Particles({ fade, count = 700, subtle = false }: { fade: FadeRef; count?: number; subtle?: boolean }) {
+function Particles({ fade, count = 700 }: { fade: FadeRef; count?: number }) {
   const pointsRef = useRef<THREE.Points>(null)
   const matRef = useRef<THREE.PointsMaterial>(null)
 
@@ -137,16 +126,13 @@ function Particles({ fade, count = 700, subtle = false }: { fade: FadeRef; count
       const t = state.clock.elapsedTime
       pointsRef.current.position.y = Math.sin(t * 0.3) * 0.1
     }
-    if (matRef.current) matRef.current.opacity = (subtle ? 0.38 : 0.85) * fade.current
+    if (matRef.current) matRef.current.opacity = 0.85 * fade.current
   })
 
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
         ref={matRef}
@@ -183,20 +169,19 @@ function ParallaxGroup({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>
 }
 
-export function TreeScene({ fade, subtle = false }: { fade: FadeRef; subtle?: boolean }) {
+export function TreeScene({ fade }: { fade: FadeRef }) {
   return (
     <Canvas
-      className="h-full w-full"
       camera={{ position: [0, 0, 8], fov: 42 }}
       gl={{ antialias: true, alpha: true }}
       dpr={[1, 2]}
     >
-      <ambientLight intensity={subtle ? 0.65 : 0.8} />
-      <pointLight position={[4, 4, 6]} intensity={subtle ? 0.9 : 1.2} color="#e7c66a" />
+      <ambientLight intensity={0.8} />
+      <pointLight position={[4, 4, 6]} intensity={1.2} color="#e7c66a" />
       <ParallaxGroup>
-        <TreeBillboard fade={fade} subtle={subtle} />
-        <Orbits fade={fade} subtle={subtle} />
-        <Particles fade={fade} subtle={subtle} />
+        <TreeBillboard fade={fade} />
+        <Orbits fade={fade} />
+        <Particles fade={fade} />
       </ParallaxGroup>
     </Canvas>
   )

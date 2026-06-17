@@ -17,7 +17,6 @@ const NAV = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [activeHash, setActiveHash] = useState("");
   const pathname = usePathname();
 
@@ -27,13 +26,6 @@ export function SiteHeader() {
       document.body.style.overflow = "";
     };
   }, [open]);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     if (pathname !== "/") {
@@ -66,26 +58,22 @@ export function SiteHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/40 bg-background/70 backdrop-blur-md">
       <div
-        className={`mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 transition-[height] duration-300 ease-out sm:px-6 ${
-          scrolled ? "h-[3.5rem]" : "h-[5rem]"
-        }`}
+        className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
       >
         <Link
           href="/"
-          className="flex items-center gap-3"
+          className="flex items-center gap-2"
           onClick={() => setOpen(false)}
         >
           <Image
             src="/images/ppp-infinity-tree.png"
             alt="PPP infinity tree logo"
-            width={231}
-            height={231}
+            width={28}
+            height={28}
             priority
-            className={`my-0.5 w-auto rounded-xl shadow-[0_0_18px_oklch(0.79_0.13_88_/_0.25)] ring-1 ring-gold/20 transition-[height] duration-300 ease-out ${
-              scrolled ? "h-[3.25rem]" : "h-[4.75rem]"
-            }`}
+            className="h-7 w-7 shrink-0 rounded-md shadow-[0_0_12px_oklch(0.79_0.13_88_/_0.2)] ring-1 ring-gold/20"
           />
-          <span className="font-heading text-xl font-semibold tracking-wide text-gold">
+          <span className="font-heading text-xl font-semibold leading-none tracking-wide text-gold">
             PPP
           </span>
         </Link>
@@ -136,9 +124,7 @@ export function SiteHeader() {
 
       {open && (
         <div
-          className={`fixed inset-0 z-40 bg-background/80 backdrop-blur-sm transition-[top] duration-300 ease-out lg:hidden ${
-            scrolled ? "top-[3.5rem]" : "top-[5rem]"
-          }`}
+          className={`fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden top-14`}
           onClick={() => setOpen(false)}
         >
           <nav
