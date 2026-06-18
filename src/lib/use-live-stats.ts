@@ -12,7 +12,6 @@ export type Deposit = {
 }
 
 export type LiveStats = {
-  tvl: number
   depositors: number
   deposits: Deposit[]
 }
@@ -83,7 +82,6 @@ function liveAmount() {
 // Simulated on-chain statistics with periodic live updates.
 export function useLiveStats(): LiveStats {
   const [stats, setStats] = useState<LiveStats>(() => ({
-    tvl: 1_284_500,
     depositors: 3127,
     deposits: seedDeposits(15),
   }))
@@ -99,7 +97,6 @@ export function useLiveStats(): LiveStats {
         }
         return {
           ...prev,
-          tvl: prev.tvl + newDeposit.amount,
           depositors: prev.depositors + 1,
           deposits: [newDeposit, ...prev.deposits].slice(0, 15),
         }

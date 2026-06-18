@@ -2,7 +2,10 @@
 
 import { DollarSign, Users, Sprout, Percent } from 'lucide-react'
 import { useLendingApy } from '@/hooks/use-lending-apy'
+import { useVaultTvl } from '@/hooks/use-vault-tvl'
 import { useYieldRaised } from '@/hooks/use-yield-raised'
+import { fmtUsd as formatVaultUsd } from '@/lib/format'
+import { VAULT } from '@/config'
 import { useLiveStats, GOAL_USD } from '@/lib/use-live-stats'
 import { StatCard } from './stat-card'
 import { DepositsFeed } from './deposits-feed'
@@ -17,6 +20,7 @@ function fmtUsd(n: number, frac = 0) {
 
 export function LiveStats() {
   const stats = useLiveStats()
+  const vaultTvl = useVaultTvl()
   const yieldRaised = useYieldRaised()
   const lendingApy = useLendingApy()
   const raisedUsd = yieldRaised.raisedUsd ?? 0
@@ -79,7 +83,7 @@ export function LiveStats() {
           <StatCard
             icon={DollarSign}
             label="Total value locked"
-            value={fmtUsd(stats.tvl)}
+            value={vaultTvl.isLoading ? '…' : formatVaultUsd(vaultTvl.totalAssets, VAULT.asset.decimals)}
             sub="Principal preserved on Base"
             live
           />
