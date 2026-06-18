@@ -56,14 +56,14 @@ export function LiveStats() {
             <div>
               <p className="text-sm text-muted-foreground">Raised toward goal</p>
               <p className="mt-1 font-heading text-3xl font-semibold tabular-nums sm:text-4xl">
-                {yieldRaised.isLoading ? '…' : fmtUsd(raisedUsd)}{' '}
+                {yieldRaised.isLoading ? '…' : fmtUsd(raisedUsd, 2)}{' '}
                 <span className="text-lg font-normal text-muted-foreground">
                   / {fmtUsd(GOAL_USD)}
                 </span>
               </p>
             </div>
             <p className="font-heading text-2xl font-semibold text-gold tabular-nums">
-              {yieldRaised.isLoading ? '…' : `${goalPct.toFixed(1)}%`}
+              {yieldRaised.isLoading ? '…' : `${goalPct.toFixed(2)}%`}
             </p>
           </div>
           <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-background/60">
