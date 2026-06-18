@@ -1,6 +1,8 @@
 'use client'
 
 import { DollarSign, Users, Sprout, Percent } from 'lucide-react'
+import { useLendingApy } from '@/hooks/use-lending-apy'
+import { useYieldRaised } from '@/hooks/use-yield-raised'
 import { useLiveStats, GOAL_USD } from '@/lib/use-live-stats'
 import { StatCard } from './stat-card'
 import { DepositsFeed } from './deposits-feed'
@@ -15,7 +17,10 @@ function fmtUsd(n: number, frac = 0) {
 
 export function LiveStats() {
   const stats = useLiveStats()
-  const goalPct = Math.min(100, (stats.tvl / GOAL_USD) * 100)
+  const yieldRaised = useYieldRaised()
+  const lendingApy = useLendingApy()
+  const raisedUsd = yieldRaised.raisedUsd ?? 0
+  const goalPct = Math.min(100, (raisedUsd / GOAL_USD) * 100)
 
   return (
     <section
@@ -51,14 +56,14 @@ export function LiveStats() {
             <div>
               <p className="text-sm text-muted-foreground">Raised toward goal</p>
               <p className="mt-1 font-heading text-3xl font-semibold tabular-nums sm:text-4xl">
-                {fmtUsd(stats.tvl)}{' '}
+                {yieldRaised.isLoading ? '…' : fmtUsd(raisedUsd)}{' '}
                 <span className="text-lg font-normal text-muted-foreground">
                   / {fmtUsd(GOAL_USD)}
                 </span>
               </p>
             </div>
             <p className="font-heading text-2xl font-semibold text-gold tabular-nums">
-              {goalPct.toFixed(1)}%
+              {yieldRaised.isLoading ? '…' : `${goalPct.toFixed(1)}%`}
             </p>
           </div>
           <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-background/60">
@@ -88,15 +93,15 @@ export function LiveStats() {
           <StatCard
             icon={Sprout}
             label="Yield donated"
-            value={fmtUsd(stats.yieldGenerated, 2)}
+            value={yieldRaised.isLoading ? '…' : fmtUsd(raisedUsd, 2)}
             sub="100% to Philippines impact"
             live
           />
           <StatCard
             icon={Percent}
             label="Current APY"
-            value={`${stats.apy.toFixed(2)}%`}
-            sub="Blended lending yield"
+            value={lendingApy.isLoading ? '…' : `${lendingApy.apy?.toFixed(2) ?? '—'}%`}
+            sub="Aave USDC supply rate"
             live
           />
         </div>

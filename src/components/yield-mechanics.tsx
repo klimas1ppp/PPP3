@@ -1,6 +1,7 @@
 'use client'
 
 import { Wallet, Layers, TrendingUp, HeartHandshake, ArrowRight } from 'lucide-react'
+import { useLendingApy } from '@/hooks/use-lending-apy'
 import { SectionDecor } from './decor/section-decor'
 import { Reveal } from './decor/scroll-fx'
 
@@ -36,6 +37,13 @@ const FLOW = [
 ]
 
 export function YieldMechanics() {
+  const lendingApy = useLendingApy()
+  const apyLabel = lendingApy.isLoading
+    ? '… APY'
+    : lendingApy.apy !== undefined
+      ? `${lendingApy.apy.toFixed(1)}% APY`
+      : '— APY'
+
   return (
     <section
       id="yield"
@@ -98,7 +106,7 @@ export function YieldMechanics() {
           className="mt-12 flex flex-wrap items-center justify-center gap-4 font-mono text-sm"
         >
           {[
-            ['~ 4.8% APY', 'blended lending yield'],
+            [apyLabel, 'Aave USDC supply rate'],
             ['100%', 'principal withdrawable'],
             ['0%', 'fees on your deposit'],
           ].map(([big, small]) => (

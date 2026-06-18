@@ -21,42 +21,31 @@ export function VaultPanel() {
 
   const canTransact = vault.isConnected && vault.isOnBase;
   const txBusy = deposit.busy || withdraw.busy;
-  const showTransact = canTransact || txBusy;
 
   return (
     <div className="rounded-3xl border border-border/60 bg-card/70 p-6 backdrop-blur-md sm:p-8">
       <StatsRow vault={vault} />
 
-      {!showTransact ? (
-        vault.isConnected && !vault.isOnBase ? (
-          <SwitchNetworkButton vault={vault} />
-        ) : (
-          <ConnectNudge />
-        )
+      <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-background/60 p-1">
+        {(["deposit", "withdraw"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`h-10 rounded-lg text-sm font-medium capitalize transition-colors ${
+              tab === t
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      {tab === "deposit" ? (
+        <DepositForm vault={vault} deposit={deposit} canTransact={canTransact} txBusy={txBusy} />
       ) : (
-        <>
-          <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-background/60 p-1">
-            {(["deposit", "withdraw"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={`h-10 rounded-lg text-sm font-medium capitalize transition-colors ${
-                  tab === t
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          {tab === "deposit" ? (
-            <DepositForm vault={vault} deposit={deposit} />
-          ) : (
-            <WithdrawForm vault={vault} withdraw={withdraw} />
-          )}
-        </>
+        <WithdrawForm vault={vault} withdraw={withdraw} canTransact={canTransact} txBusy={txBusy} />
       )}
 
       <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground/80">
@@ -77,30 +66,15 @@ export function VaultPanel() {
   );
 }
 
-function ConnectNudge() {
-  return (
-    <div className="mt-6">
-      <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-        Connect your wallet to deposit USDC and put your savings to work for good — your principal
-        stays fully yours.
-      </p>
-      <WalletButton variant="primary" />
-    </div>
-  );
-}
-
 function SwitchNetworkButton({ vault }: { vault: VaultState }) {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <div className="mt-6">
-      <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-        Your wallet is connected on another network. Switch to {VAULT.chainName} to deposit.
-      </p>
+    <>
       {error && <TxBanner tone="error">{error}</TxBanner>}
       <button
         type="button"
-        className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
         disabled={vault.isSwitching}
         onClick={() => {
           setError(null);
@@ -109,6 +83,48 @@ function SwitchNetworkButton({ vault }: { vault: VaultState }) {
       >
         {vault.isSwitching ? "Switching…" : `Switch to ${VAULT.chainName}`}
       </button>
+    </>
+  );
+}
+
+function VaultAction({
+  vault,
+  canTransact,
+  txBusy,
+  phase,
+  verb,
+  busy,
+  disabled,
+  onClick,
+}: {
+  vault: VaultState;
+  canTransact: boolean;
+  txBusy: boolean;
+  phase: TxPhase;
+  verb: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  if (canTransact || txBusy) {
+    return (
+      <ActionButton
+        phase={phase}
+        verb={verb}
+        busy={busy}
+        disabled={disabled}
+        onClick={onClick}
+      />
+    );
+  }
+
+  if (vault.isConnected && !vault.isOnBase) {
+    return <SwitchNetworkButton vault={vault} />;
+  }
+
+  return (
+    <div className="mt-6">
+      <WalletButton variant="primary" />
     </div>
   );
 }
@@ -117,15 +133,17 @@ function StatsRow({ vault }: { vault: VaultState }) {
   const d = VAULT.asset.decimals;
 
   return (
-    <div className={`grid gap-3 ${vault.isConnected ? "grid-cols-2" : "grid-cols-1"}`}>
+    <div className="grid grid-cols-2 gap-3">
       <Stat label="Vault total" value={fmtUsd(vault.totalAssets, d)} loading={vault.isLoading} />
-      {vault.isConnected && (
-        <Stat
-          label="Your deposit"
-          value={`${fmtAmount(vault.deposited, d)} ${VAULT.asset.symbol}`}
-          loading={vault.isLoading}
-        />
-      )}
+      <Stat
+        label="Your deposit"
+        value={
+          vault.isConnected
+            ? `${fmtAmount(vault.deposited, d)} ${VAULT.asset.symbol}`
+            : "—"
+        }
+        loading={vault.isConnected && vault.isLoading}
+      />
     </div>
   );
 }
@@ -144,9 +162,13 @@ function Stat({ label, value, loading }: { label: string; value: string; loading
 function DepositForm({
   vault,
   deposit,
+  canTransact,
+  txBusy,
 }: {
   vault: VaultState;
   deposit: ReturnType<typeof useDeposit>;
+  canTransact: boolean;
+  txBusy: boolean;
 }) {
   const [amount, setAmount] = useState("");
 
@@ -165,12 +187,19 @@ function DepositForm({
           );
         }}
         symbol={VAULT.asset.symbol}
-        hint={`Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
-        error={insufficient ? "Insufficient balance" : undefined}
+        hint={
+          vault.isConnected
+            ? `Wallet: ${fmtAmount(vault.walletBalance, VAULT.asset.decimals)} ${VAULT.asset.symbol}`
+            : `Wallet: —`
+        }
+        error={canTransact && insufficient ? "Insufficient balance" : undefined}
         disabled={deposit.busy}
       />
       <TxStatus state={deposit.state} verb="Deposit" onDone={() => deposit.reset()} />
-      <ActionButton
+      <VaultAction
+        vault={vault}
+        canTransact={canTransact}
+        txBusy={txBusy}
         phase={deposit.state.phase}
         verb="Deposit"
         busy={deposit.busy}
@@ -193,9 +222,13 @@ function DepositForm({
 function WithdrawForm({
   vault,
   withdraw,
+  canTransact,
+  txBusy,
 }: {
   vault: VaultState;
   withdraw: ReturnType<typeof useWithdraw>;
+  canTransact: boolean;
+  txBusy: boolean;
 }) {
   const [amount, setAmount] = useState("");
 
@@ -211,12 +244,19 @@ function WithdrawForm({
           setAmount(vault.deposited > 0n ? trimUnits(vault.deposited, VAULT.asset.decimals) : "")
         }
         symbol={VAULT.asset.symbol}
-        hint={`Deposited: ${fmtAmount(vault.deposited, VAULT.asset.decimals)} ${VAULT.asset.symbol}`}
-        error={insufficient ? "Exceeds your deposit" : undefined}
+        hint={
+          vault.isConnected
+            ? `Deposited: ${fmtAmount(vault.deposited, VAULT.asset.decimals)} ${VAULT.asset.symbol}`
+            : `Deposited: —`
+        }
+        error={canTransact && insufficient ? "Exceeds your deposit" : undefined}
         disabled={withdraw.busy}
       />
       <TxStatus state={withdraw.state} verb="Withdraw" onDone={() => withdraw.reset()} />
-      <ActionButton
+      <VaultAction
+        vault={vault}
+        canTransact={canTransact}
+        txBusy={txBusy}
         phase={withdraw.state.phase}
         verb="Withdraw"
         busy={withdraw.busy}

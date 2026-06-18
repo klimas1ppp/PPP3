@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export const GOAL_USD = 2_000_000
 
@@ -14,8 +14,6 @@ export type Deposit = {
 export type LiveStats = {
   tvl: number
   depositors: number
-  yieldGenerated: number
-  apy: number
   deposits: Deposit[]
 }
 
@@ -87,23 +85,10 @@ export function useLiveStats(): LiveStats {
   const [stats, setStats] = useState<LiveStats>(() => ({
     tvl: 1_284_500,
     depositors: 3127,
-    yieldGenerated: 142_380,
-    apy: 6.4,
     deposits: seedDeposits(15),
   }))
-  const yieldRef = useRef(stats.yieldGenerated)
 
   useEffect(() => {
-    // Slow yield accrual ticker (every second)
-    const yieldTimer = setInterval(() => {
-      setStats((prev) => {
-        const perSecond = (prev.tvl * (prev.apy / 100)) / (365 * 24 * 60 * 60)
-        yieldRef.current += perSecond
-        return { ...prev, yieldGenerated: prev.yieldGenerated + perSecond }
-      })
-    }, 1000)
-
-    // New deposit events (every 4.5s)
     const depositTimer = setInterval(() => {
       setStats((prev) => {
         const newDeposit: Deposit = {
@@ -112,22 +97,16 @@ export function useLiveStats(): LiveStats {
           amount: liveAmount(),
           timestamp: Date.now(),
         }
-        const apyDrift = Math.min(
-          7.8,
-          Math.max(5.2, prev.apy + (Math.random() * 0.2 - 0.1)),
-        )
         return {
           ...prev,
           tvl: prev.tvl + newDeposit.amount,
           depositors: prev.depositors + 1,
-          apy: Number(apyDrift.toFixed(2)),
           deposits: [newDeposit, ...prev.deposits].slice(0, 15),
         }
       })
     }, 4500)
 
     return () => {
-      clearInterval(yieldTimer)
       clearInterval(depositTimer)
     }
   }, [])

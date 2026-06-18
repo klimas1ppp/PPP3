@@ -1,22 +1,51 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
 
-// Cache the rate for an hour; revalidate in the background.
-export const revalidate = 3600
+export const revalidate = 3600;
 
-const FALLBACK_RATE = 58.5
+type RateResult = {
+  rate: number;
+  source: string;
+  updated: string | null;
+};
+
+async function fetchFrankfurter(): Promise<RateResult> {
+  const res = await fetch("https://api.frankfurter.app/latest?from=USD&to=PHP", {
+    next: { revalidate: 3600 },
+    redirect: "follow",
+  });
+  if (!res.ok) throw new Error(`frankfurter status ${res.status}`);
+  const data = await res.json();
+  const rate = data?.rates?.PHP;
+  if (typeof rate !== "number") throw new Error("frankfurter: no PHP rate");
+  return { rate, source: "frankfurter", updated: data?.date ?? null };
+}
+
+async function fetchErApi(): Promise<RateResult> {
+  const res = await fetch("https://open.er-api.com/v6/latest/USD", {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) throw new Error(`er-api status ${res.status}`);
+  const data = await res.json();
+  const rate = data?.rates?.PHP;
+  if (typeof rate !== "number") throw new Error("er-api: no PHP rate");
+  return {
+    rate,
+    source: "exchangerate-api",
+    updated: data?.time_last_update_utc ?? null,
+  };
+}
 
 export async function GET() {
-  try {
-    const res = await fetch(
-      'https://open.er-api.com/v6/latest/USD',
-      { next: { revalidate: 3600 } },
-    )
-    if (!res.ok) throw new Error(`status ${res.status}`)
-    const data = await res.json()
-    const rate = data?.rates?.PHP
-    if (typeof rate !== 'number') throw new Error('no PHP rate')
-    return NextResponse.json({ rate, source: 'live', updated: data.time_last_update_utc ?? null })
-  } catch {
-    return NextResponse.json({ rate: FALLBACK_RATE, source: 'estimate', updated: null })
+  const sources = [fetchFrankfurter, fetchErApi];
+
+  for (const source of sources) {
+    try {
+      const result = await source();
+      return NextResponse.json(result);
+    } catch {
+      // try next provider
+    }
   }
+
+  return NextResponse.json({ error: "PHP rate unavailable" }, { status: 503 });
 }

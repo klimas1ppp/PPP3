@@ -1,16 +1,14 @@
 'use client'
 
-import useSWR from 'swr'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRightLeft, RefreshCw, Sprout, Stethoscope, GraduationCap, Droplets } from 'lucide-react'
+import { usePhpRate } from '@/hooks/use-php-rate'
+import { useYieldRaised } from '@/hooks/use-yield-raised'
 import { SectionDecor } from './decor/section-decor'
 import { Reveal } from './decor/scroll-fx'
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
-
 const PRESETS = [50, 100, 500, 1000]
 
-// What a given number of PHP can fund on the ground (approximate costs).
 const IMPACT_TIERS = [
   {
     icon: Droplets,
@@ -39,14 +37,20 @@ function fmtPhp(n: number) {
 }
 
 export function PhpImpact() {
-  const { data, isLoading } = useSWR<{ rate: number; source: string }>(
-    '/api/php-rate',
-    fetcher,
-    { revalidateOnFocus: false },
-  )
+  const { rate, source, isLoading: rateLoading, isError: rateError } = usePhpRate()
+  const yieldRaised = useYieldRaised()
   const [usd, setUsd] = useState(100)
-  const rate = data?.rate ?? 58.5
-  const php = usd * rate
+  const [manualUsd, setManualUsd] = useState(false)
+
+  useEffect(() => {
+    if (manualUsd) return
+    if (yieldRaised.raisedUsd !== undefined && yieldRaised.raisedUsd > 0) {
+      setUsd(yieldRaised.raisedUsd)
+    }
+  }, [yieldRaised.raisedUsd, manualUsd])
+
+  const php = rate !== undefined ? usd * rate : undefined
+  const liveYieldUsd = yieldRaised.raisedUsd ?? 0
 
   return (
     <section
@@ -74,7 +78,6 @@ export function PhpImpact() {
         </Reveal>
 
         <div className="mt-14 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          {/* Converter */}
           <Reveal className="gradient-border p-px">
             <div className="flex h-full flex-col rounded-[calc(1rem-1px)] bg-card/80 p-6 backdrop-blur-sm sm:p-8">
               <div className="flex items-center justify-between">
@@ -83,21 +86,30 @@ export function PhpImpact() {
                   Live exchange rate
                 </span>
                 <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-                  {isLoading ? (
+                  {rateLoading ? (
                     <RefreshCw className="h-3 w-3 animate-spin" aria-hidden="true" />
+                  ) : rateError || rate === undefined ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
                   ) : (
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                   )}
-                  {data?.source === 'estimate' ? 'estimate' : 'live'}
+                  {rateLoading ? 'loading' : rateError ? 'unavailable' : 'live'}
                 </span>
               </div>
 
               <div className="mt-4 flex items-baseline gap-2">
                 <span className="font-heading text-4xl font-semibold text-gold tabular-nums">
-                  ₱{rate.toFixed(2)}
+                  {rateLoading || rate === undefined
+                    ? '…'
+                    : `₱${rate.toFixed(2)}`}
                 </span>
                 <span className="text-sm text-muted-foreground">/ 1 USDC</span>
               </div>
+              {source && (
+                <p className="mt-1 font-mono text-xs text-muted-foreground/70">
+                  via {source}
+                </p>
+              )}
 
               <div className="mt-6">
                 <label
@@ -113,20 +125,40 @@ export function PhpImpact() {
                     type="number"
                     min={1}
                     value={usd}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      setManualUsd(true)
                       setUsd(Math.max(0, Number(e.target.value) || 0))
-                    }
+                    }}
                     className="w-full bg-transparent text-lg font-semibold tabular-nums outline-none"
                   />
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {liveYieldUsd > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManualUsd(false)
+                        setUsd(liveYieldUsd)
+                      }}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                        !manualUsd && usd === liveYieldUsd
+                          ? 'border-gold bg-primary/15 text-gold'
+                          : 'border-border bg-background/40 text-muted-foreground hover:border-gold/40'
+                      }`}
+                    >
+                      Live yield
+                    </button>
+                  )}
                   {PRESETS.map((p) => (
                     <button
                       key={p}
                       type="button"
-                      onClick={() => setUsd(p)}
+                      onClick={() => {
+                        setManualUsd(true)
+                        setUsd(p)
+                      }}
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                        usd === p
+                        manualUsd && usd === p
                           ? 'border-gold bg-primary/15 text-gold'
                           : 'border-border bg-background/40 text-muted-foreground hover:border-gold/40'
                       }`}
@@ -142,54 +174,61 @@ export function PhpImpact() {
                   Becomes, on the ground
                 </p>
                 <p className="mt-1 font-heading text-3xl font-semibold text-teal-soft tabular-nums">
-                  ₱{fmtPhp(php)}
+                  {php !== undefined ? `₱${fmtPhp(php)}` : '…'}
                 </p>
               </div>
             </div>
           </Reveal>
 
-          {/* Impact examples */}
           <Reveal delay={120} className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
-              What ₱{fmtPhp(php)} can help fund:
+              {php !== undefined
+                ? `What ₱${fmtPhp(php)} can help fund:`
+                : 'What your yield can help fund:'}
             </p>
-            {IMPACT_TIERS.map((tier) => {
-              const reached = php / tier.php
-              const can = reached >= 1
-              return (
-                <div
-                  key={tier.label}
-                  className={`flex items-center gap-4 rounded-2xl border p-5 backdrop-blur-sm transition-colors ${
-                    can
-                      ? 'border-gold/40 bg-card/70'
-                      : 'border-border/40 bg-card/30'
-                  }`}
-                >
-                  <span
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                      can ? 'bg-primary/15 text-gold' : 'bg-muted/40 text-muted-foreground'
+            {php !== undefined ? (
+              IMPACT_TIERS.map((tier) => {
+                const reached = php / tier.php
+                const can = reached >= 1
+                return (
+                  <div
+                    key={tier.label}
+                    className={`flex items-center gap-4 rounded-2xl border p-5 backdrop-blur-sm transition-colors ${
+                      can
+                        ? 'border-gold/40 bg-card/70'
+                        : 'border-border/40 bg-card/30'
                     }`}
                   >
-                    <tier.icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{tier.label}</p>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      ≈ ₱{fmtPhp(tier.php)} each
-                    </p>
+                    <span
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                        can ? 'bg-primary/15 text-gold' : 'bg-muted/40 text-muted-foreground'
+                      }`}
+                    >
+                      <tier.icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{tier.label}</p>
+                      <p className="font-mono text-xs text-muted-foreground">
+                        ≈ ₱{fmtPhp(tier.php)} each
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 font-heading text-lg font-semibold tabular-nums ${
+                        can ? 'text-gold' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {reached >= 1
+                        ? `×${Math.floor(reached)}`
+                        : `${Math.round(reached * 100)}%`}
+                    </span>
                   </div>
-                  <span
-                    className={`shrink-0 font-heading text-lg font-semibold tabular-nums ${
-                      can ? 'text-gold' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {reached >= 1
-                      ? `×${Math.floor(reached)}`
-                      : `${Math.round(reached * 100)}%`}
-                  </span>
-                </div>
-              )
-            })}
+                )
+              })
+            ) : (
+              <div className="rounded-2xl border border-border/40 bg-card/30 p-5 text-sm text-muted-foreground">
+                Waiting for live exchange rate…
+              </div>
+            )}
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground/70">
               Figures are illustrative estimates based on typical local costs.
               As a non-profit, 100% of yield is converted and deployed to
