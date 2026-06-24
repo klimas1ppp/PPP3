@@ -38,7 +38,7 @@ const MILESTONES: Milestone[] = [
     title: 'First Yield',
     annualYield: '~$3,000 annual yield',
     icon: Sprout,
-    color: 'var(--teal)',
+    color: 'oklch(0.79 0.13 88)',
     desc: 'The first proof that idle capital can generate continuous charitable funding without requiring donors to part with their principal.',
   },
   {
@@ -62,7 +62,7 @@ const MILESTONES: Milestone[] = [
     title: 'Sustainable Programs',
     annualYield: '~$30,000 annual yield',
     icon: Building2,
-    color: 'var(--chart-4)',
+    color: '#9cdc71',
     desc: 'The project reaches a scale where long-term programs become possible rather than one-time interventions.',
   },
   {
@@ -70,7 +70,7 @@ const MILESTONES: Milestone[] = [
     title: 'Community Transformation',
     annualYield: '~$60,000 annual yield',
     icon: Globe2,
-    color: 'var(--gold)',
+    color: '#b8c94e',
     desc: 'PPP can move beyond helping individual families and begin contributing to lasting improvements across entire communities through sustained funding and long-term initiatives.',
   },
 ]
@@ -335,9 +335,9 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                 ? 1
                 : 0
               : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
-            // The final cap segment uses gold-soft; non-final segments take the
+            // The final cap segment uses gold; non-final segments take the
             // color of the milestone they lead into.
-            const segColor = isLast ? 'var(--gold-soft)' : (nextM?.color ?? 'var(--gold)')
+            const segColor = isLast ? 'oklch(0.79 0.13 88)' : (nextM?.color ?? 'oklch(0.79 0.13 88)')
             const started = isLast ? reached : tvl > lo
             const segReached = isLast ? reached : tvl >= hi
 
