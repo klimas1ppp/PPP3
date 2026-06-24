@@ -62,7 +62,7 @@ const MILESTONES: Milestone[] = [
     title: 'Sustainable Programs',
     annualYield: '~$30,000 annual yield',
     icon: Building2,
-    color: 'var(--gold-soft)',
+    color: 'var(--chart-4)',
     desc: 'The project reaches a scale where long-term programs become possible rather than one-time interventions.',
   },
   {
@@ -70,7 +70,7 @@ const MILESTONES: Milestone[] = [
     title: 'Community Transformation',
     annualYield: '~$60,000 annual yield',
     icon: Globe2,
-    color: 'var(--gold)',
+    color: 'var(--gold-soft)',
     desc: 'PPP can move beyond helping individual families and begin contributing to lasting improvements across entire communities through sustained funding and long-term initiatives.',
   },
 ]
@@ -85,6 +85,19 @@ const PARTICLES = [
   { left: 68, size: 2, delay: 1.2, drift: 4, tall: true },
   { left: 80, size: 3, delay: 0.6, drift: -5, tall: false },
   { left: 90, size: 2, delay: 1.8, drift: 2, tall: true },
+] as const
+
+/** Extra burst emitted by a section while the orb is passing through it. */
+const EXTRA_BURST = [
+  { left: 8, size: 3, delay: 0, drift: -3, tall: true },
+  { left: 18, size: 2, delay: 0.15, drift: 4, tall: false },
+  { left: 30, size: 4, delay: 0.3, drift: -2, tall: true },
+  { left: 42, size: 2, delay: 0.45, drift: 3, tall: false },
+  { left: 54, size: 3, delay: 0.2, drift: -4, tall: true },
+  { left: 64, size: 2, delay: 0.5, drift: 2, tall: false },
+  { left: 74, size: 4, delay: 0.35, drift: -3, tall: true },
+  { left: 84, size: 2, delay: 0.1, drift: 4, tall: false },
+  { left: 94, size: 3, delay: 0.4, drift: -2, tall: true },
 ] as const
 
 /** Dense particle trail dragged behind the moving glow orb. */
@@ -187,6 +200,33 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
   // Overall progress toward the final milestone (for the headline %).
   const finalGoal = MILESTONES[MILESTONES.length - 1].threshold
   const overallPct = Math.min(100, (tvl / finalGoal) * 100)
+
+  // Track which section the traveling glow orb is currently over so that
+  // section can emit an extra particle burst as the orb passes through it.
+  // The orb sweeps the reached portion (0 -> overallPct%) every 7s, matching
+  // the `glow-travel` CSS animation period.
+  const overallPctRef = useRef(overallPct)
+  overallPctRef.current = overallPct
+  const [orbSection, setOrbSection] = useState(-1)
+  const orbSectionRef = useRef(-1)
+
+  useEffect(() => {
+    let raf = 0
+    const period = 7000
+    const segCount = MILESTONES.length
+    const loop = (now: number) => {
+      const phase = (now % period) / period
+      const pos = (phase * overallPctRef.current) / 100 // 0..(overallPct/100)
+      const sec = pos <= 0 ? -1 : Math.min(segCount - 1, Math.floor(pos * segCount))
+      if (sec !== orbSectionRef.current) {
+        orbSectionRef.current = sec
+        setOrbSection(sec)
+      }
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   return (
     <div className="mt-14 rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm sm:p-8">
@@ -295,7 +335,9 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                 ? 1
                 : 0
               : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
-            const segColor = nextM?.color ?? m.color ?? 'var(--gold)'
+            // The final cap segment is always the pinnacle gold; non-final
+            // segments take the color of the milestone they lead into.
+            const segColor = isLast ? 'var(--gold)' : (nextM?.color ?? 'var(--gold)')
             const started = isLast ? reached : tvl > lo
             const segReached = isLast ? reached : tvl >= hi
 
@@ -345,6 +387,35 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                           width: `${pt.size}px`,
                           background: `color-mix(in oklch, ${segColor} 35%, white)`,
                           boxShadow: `0 0 6px color-mix(in oklch, ${segColor} 80%, transparent)`,
+                          animationDelay: `${pt.delay}s`,
+                          // @ts-expect-error custom property for horizontal drift
+                          '--drift-x': `${pt.drift}px`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Temporary extra burst that fires while the traveling orb is
+                    crossing THIS section. */}
+                {started && orbSection === i && (
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    aria-hidden="true"
+                  >
+                    {EXTRA_BURST.map((pt, p) => (
+                      <span
+                        key={p}
+                        className={cn(
+                          'absolute bottom-0 rounded-full',
+                          pt.tall ? 'animate-particle-tall' : 'animate-particle',
+                        )}
+                        style={{
+                          left: `${pt.left}%`,
+                          height: `${pt.size}px`,
+                          width: `${pt.size}px`,
+                          background: `color-mix(in oklch, ${segColor} 25%, white)`,
+                          boxShadow: `0 0 8px color-mix(in oklch, ${segColor} 90%, transparent)`,
                           animationDelay: `${pt.delay}s`,
                           // @ts-expect-error custom property for horizontal drift
                           '--drift-x': `${pt.drift}px`,
