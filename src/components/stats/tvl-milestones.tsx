@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Rocket,
   Sprout,
@@ -8,6 +8,8 @@ import {
   Repeat,
   Building2,
   Globe2,
+  Play,
+  RotateCcw,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -93,7 +95,54 @@ type Props = {
 }
 
 export function TvlMilestones({ tvlUsd, isLoading }: Props) {
-  const tvl = tvlUsd ?? 0
+  const realTvl = tvlUsd ?? 0
+  const finalGoalValue = MILESTONES[MILESTONES.length - 1].threshold
+
+  // Demo simulation: sweep TVL from 0 up to the final goal.
+  const [simValue, setSimValue] = useState<number | null>(null)
+  const [simRunning, setSimRunning] = useState(false)
+  const rafRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!simRunning) return
+    const duration = 9000 // ms for full sweep
+    const start = performance.now()
+    const startValue = simValue ?? 0
+    const remaining = 1 - startValue / finalGoalValue
+
+    const tick = (now: number) => {
+      const elapsed = now - start
+      // ease-out so it slows as it approaches the goal
+      const linear = Math.min(1, elapsed / (duration * Math.max(remaining, 0.0001)))
+      const eased = 1 - Math.pow(1 - linear, 2)
+      const value = startValue + (finalGoalValue - startValue) * eased
+      setSimValue(value)
+      if (linear < 1) {
+        rafRef.current = requestAnimationFrame(tick)
+      } else {
+        setSimValue(finalGoalValue)
+        setSimRunning(false)
+      }
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simRunning])
+
+  const isSimulating = simValue !== null
+  const tvl = isSimulating ? (simValue as number) : realTvl
+
+  const startSimulation = () => {
+    setSimValue(0)
+    setSimRunning(true)
+  }
+  const resetSimulation = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    setSimRunning(false)
+    setSimValue(null)
+  }
 
   // Highest milestone whose threshold has been reached.
   let activeIndex = 0
@@ -127,16 +176,37 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             </span>
           </p>
         </div>
-        <div className="text-right">
-          <p className="font-heading text-2xl font-semibold text-gold tabular-nums">
-            {isLoading ? '…' : `${overallPct.toFixed(1)}%`}
-          </p>
-          {next ? (
-            <p className="text-xs text-muted-foreground">
-              Next: {next.title} at {fmtCompact(next.threshold)}
+        <div className="flex items-end gap-4">
+          <div className="text-right">
+            <p className="font-heading text-2xl font-semibold text-gold tabular-nums">
+              {isLoading && !isSimulating ? '…' : `${overallPct.toFixed(1)}%`}
             </p>
+            {next ? (
+              <p className="text-xs text-muted-foreground">
+                Next: {next.title} at {fmtCompact(next.threshold)}
+              </p>
+            ) : (
+              <p className="text-xs text-gold">All milestones reached</p>
+            )}
+          </div>
+          {isSimulating ? (
+            <button
+              type="button"
+              onClick={resetSimulation}
+              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-gold/50 hover:text-gold"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              Reset
+            </button>
           ) : (
-            <p className="text-xs text-gold">All milestones reached</p>
+            <button
+              type="button"
+              onClick={startSimulation}
+              className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:bg-gold/20"
+            >
+              <Play className="h-3.5 w-3.5" aria-hidden="true" />
+              Simulate growth
+            </button>
           )}
         </div>
       </div>
