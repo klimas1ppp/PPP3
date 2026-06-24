@@ -20,10 +20,10 @@ export default function Home() {
       <main>
         <Hero />
         <DepositSection />
+        <LiveStats />
         <HowItWorks />
         <YieldMechanics />
         <Protocols />
-        <LiveStats />
         <Impact />
         <PhpImpact />
         <Roadmap />
