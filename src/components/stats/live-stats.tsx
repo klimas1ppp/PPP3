@@ -6,10 +6,11 @@ import { useVaultTvl } from '@/hooks/use-vault-tvl'
 import { useYieldRaised } from '@/hooks/use-yield-raised'
 import { fmtUsd as formatVaultUsd } from '@/lib/format'
 import { VAULT } from '@/config'
-import { useLiveStats, GOAL_USD } from '@/lib/use-live-stats'
+import { useLiveStats } from '@/lib/use-live-stats'
 import { StatCard } from './stat-card'
 import { DepositsFeed } from './deposits-feed'
 import { TvlChart, AllocationChart } from './stats-charts'
+import { TvlMilestones } from './tvl-milestones'
 
 function fmtUsd(n: number, frac = 0) {
   return `$${n.toLocaleString('en-US', {
@@ -24,7 +25,6 @@ export function LiveStats() {
   const yieldRaised = useYieldRaised()
   const lendingApy = useLendingApy()
   const raisedUsd = yieldRaised.raisedUsd ?? 0
-  const goalPct = Math.min(100, (raisedUsd / GOAL_USD) * 100)
 
   return (
     <section
@@ -54,29 +54,8 @@ export function LiveStats() {
           </p>
         </div>
 
-        {/* Goal progress */}
-        <div className="mt-14 rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm sm:p-8">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <p className="text-sm text-muted-foreground">Raised toward goal</p>
-              <p className="mt-1 font-heading text-3xl font-semibold tabular-nums sm:text-4xl">
-                {yieldRaised.isLoading ? '…' : fmtUsd(raisedUsd, 2)}{' '}
-                <span className="text-lg font-normal text-muted-foreground">
-                  / {fmtUsd(GOAL_USD)}
-                </span>
-              </p>
-            </div>
-            <p className="font-heading text-2xl font-semibold text-gold tabular-nums">
-              {yieldRaised.isLoading ? '…' : `${goalPct.toFixed(2)}%`}
-            </p>
-          </div>
-          <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-background/60">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
-              style={{ width: `${goalPct}%` }}
-            />
-          </div>
-        </div>
+        {/* TVL milestone progress */}
+        <TvlMilestones tvlUsd={vaultTvl.tvlUsd} isLoading={vaultTvl.isLoading} />
 
         {/* Stat cards */}
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
