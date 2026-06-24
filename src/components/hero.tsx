@@ -32,7 +32,7 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative flex min-h-[100svh] flex-col items-center overflow-hidden px-4 pb-24 pt-16 sm:pt-20"
+      className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 pb-24 pt-16 sm:pt-20"
     >
       {/* Fixed 3D layer that fades on scroll */}
       <div
@@ -75,15 +75,34 @@ export function Hero() {
           <br />
           <span className="text-gold gold-glow">donate the yield.</span>
         </h1>
-      </div>
 
-      <p
-        className="hero-rise relative z-10 mx-auto mt-auto max-w-xl text-pretty text-center text-base leading-relaxed text-muted-foreground sm:text-lg"
-        style={{ animationDelay: '2.0s', opacity: containerOpacity }}
-      >
-        The seed is in your hands. Deposit USDC, withdraw anytime, and let the
-        yield grow real, sustainable impact for communities in the Philippines.
-      </p>
+        <p
+          className="hero-rise mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-foreground sm:text-lg"
+          style={{ animationDelay: '2.0s' }}
+        >
+          The seed is in your hands. Deposit USDC, withdraw anytime, and let the
+          yield grow real, sustainable impact for communities in the
+          Philippines.
+        </p>
+
+        <div
+          className="hero-rise mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+          style={{ animationDelay: '2.3s' }}
+        >
+          <a
+            href="#deposit"
+            className="rounded-full bg-gold px-8 py-3.5 text-sm font-semibold text-background transition-colors hover:bg-gold-soft"
+          >
+            Plant your seed
+          </a>
+          <a
+            href="#how"
+            className="rounded-full border border-gold/30 bg-card/40 px-8 py-3.5 text-sm font-semibold text-foreground backdrop-blur-sm transition-colors hover:border-gold/60"
+          >
+            How it works
+          </a>
+        </div>
+      </div>
 
       <div
         className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-muted-foreground"
