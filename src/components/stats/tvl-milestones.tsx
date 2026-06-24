@@ -38,7 +38,7 @@ const MILESTONES: Milestone[] = [
     title: 'First Yield',
     annualYield: '~$3,000 annual yield',
     icon: Sprout,
-    color: 'oklch(0.79 0.13 88)',
+    color: 'oklch(0.78 0.12 175)',
     desc: 'The first proof that idle capital can generate continuous charitable funding without requiring donors to part with their principal.',
   },
   {
@@ -46,7 +46,7 @@ const MILESTONES: Milestone[] = [
     title: 'First Impact',
     annualYield: '~$7,500 annual yield',
     icon: HandHeart,
-    color: 'var(--chart-3)',
+    color: '#58c9c8',
     desc: 'Enough to begin funding recurring assistance and small community initiatives in the Philippines.',
   },
   {
@@ -54,7 +54,7 @@ const MILESTONES: Milestone[] = [
     title: 'Recurring Support',
     annualYield: '~$15,000 annual yield',
     icon: Repeat,
-    color: 'var(--chart-2)',
+    color: '#69d182',
     desc: 'PPP can consistently support families, educational needs, and local community projects throughout the year.',
   },
   {
@@ -70,7 +70,7 @@ const MILESTONES: Milestone[] = [
     title: 'Community Transformation',
     annualYield: '~$60,000 annual yield',
     icon: Globe2,
-    color: '#b8c94e',
+    color: '#d1e262',
     desc: 'PPP can move beyond helping individual families and begin contributing to lasting improvements across entire communities through sustained funding and long-term initiatives.',
   },
 ]
