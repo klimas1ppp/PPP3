@@ -313,6 +313,27 @@
   animation: rise-particle-tall 4.2s ease-out infinite;
 }
 
+/* A glow "comet" that sweeps left->right across the reached portion of the bar */
+@keyframes glow-travel {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+.animate-glow-travel {
+  animation: glow-travel 2.6s ease-in-out infinite;
+}
+
 /* Sliding sheen across a filled progress segment */
 @keyframes seg-sheen {
   0% {
@@ -418,6 +439,7 @@
   .animate-drift,
   .animate-particle,
   .animate-particle-tall,
+  .animate-glow-travel,
   .animate-sheen,
   .gradient-border {
     animation: none;
