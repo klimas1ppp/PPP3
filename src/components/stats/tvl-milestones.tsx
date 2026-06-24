@@ -70,7 +70,7 @@ const MILESTONES: Milestone[] = [
     title: 'Community Transformation',
     annualYield: '~$60,000 annual yield',
     icon: Globe2,
-    color: 'var(--gold-soft)',
+    color: 'var(--gold)',
     desc: 'PPP can move beyond helping individual families and begin contributing to lasting improvements across entire communities through sustained funding and long-term initiatives.',
   },
 ]
@@ -335,9 +335,9 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                 ? 1
                 : 0
               : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
-            // The final cap segment is always the pinnacle gold; non-final
-            // segments take the color of the milestone they lead into.
-            const segColor = isLast ? 'var(--gold)' : (nextM?.color ?? 'var(--gold)')
+            // The final cap segment uses gold-soft; non-final segments take the
+            // color of the milestone they lead into.
+            const segColor = isLast ? 'var(--gold-soft)' : (nextM?.color ?? 'var(--gold)')
             const started = isLast ? reached : tvl > lo
             const segReached = isLast ? reached : tvl >= hi
 
