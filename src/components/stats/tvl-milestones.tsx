@@ -75,7 +75,7 @@ const MILESTONES: Milestone[] = [
   },
 ]
 
-/** Particle field rendered over each reached segment. */
+/** Particle field rendered over each reached/started segment (always present). */
 const PARTICLES = [
   { left: 12, size: 3, delay: 0, drift: -4, tall: false },
   { left: 24, size: 2, delay: 0.9, drift: 3, tall: true },
@@ -85,6 +85,22 @@ const PARTICLES = [
   { left: 68, size: 2, delay: 1.2, drift: 4, tall: true },
   { left: 80, size: 3, delay: 0.6, drift: -5, tall: false },
   { left: 90, size: 2, delay: 1.8, drift: 2, tall: true },
+] as const
+
+/** Dense particle trail dragged behind the moving glow orb. */
+const ORB_TRAIL = [
+  { dx: 2, size: 3, delay: 0, drift: 2, tall: false },
+  { dx: -4, size: 2, delay: 0.25, drift: -3, tall: true },
+  { dx: -9, size: 4, delay: 0.5, drift: 2, tall: false },
+  { dx: -14, size: 2, delay: 0.75, drift: -2, tall: true },
+  { dx: -19, size: 3, delay: 1.0, drift: 3, tall: false },
+  { dx: -24, size: 2, delay: 1.25, drift: -4, tall: true },
+  { dx: -29, size: 3, delay: 1.5, drift: 2, tall: false },
+  { dx: -34, size: 2, delay: 1.75, drift: -2, tall: true },
+  { dx: -6, size: 2, delay: 0.4, drift: 4, tall: true },
+  { dx: -12, size: 3, delay: 0.65, drift: -3, tall: false },
+  { dx: -18, size: 2, delay: 0.9, drift: 3, tall: true },
+  { dx: -26, size: 2, delay: 1.15, drift: -2, tall: false },
 ] as const
 
 function fmtCompact(n: number) {
@@ -267,17 +283,21 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
 
             // Each column shows the segment growing OUT of this milestone toward
             // the next one, so the very first segment (Launch -> First Yield)
-            // begins filling immediately as TVL rises from $0.
+            // begins filling immediately as TVL rises from $0. The final column
+            // (no next milestone) acts as a "cap" that fills fully once its own
+            // threshold (the goal) is reached, so it is never left colorless.
             const nextM = MILESTONES[i + 1]
-            const hasSegment = Boolean(nextM)
+            const isLast = !nextM
             const lo = m.threshold
             const hi = nextM ? nextM.threshold : m.threshold
-            const fillRatio = hasSegment
-              ? Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
-              : 0
-            const segColor = nextM?.color ?? 'var(--gold)'
-            const started = hasSegment && tvl > lo
-            const segReached = hasSegment && tvl >= hi
+            const fillRatio = isLast
+              ? reached
+                ? 1
+                : 0
+              : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+            const segColor = nextM?.color ?? m.color ?? 'var(--gold)'
+            const started = isLast ? reached : tvl > lo
+            const segReached = isLast ? reached : tvl >= hi
 
             return (
             <button
@@ -291,17 +311,48 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
               aria-label={`${m.title} — ${fmtCompact(m.threshold)} TVL`}
               className="group flex flex-1 flex-col items-center gap-3 text-center focus:outline-none"
             >
-              {/* Segment bar — track + colored fill (the moving glow lives in a
-                  shared overlay above the whole row) */}
-              <div className="relative h-[1.875rem] w-full overflow-hidden rounded-full bg-background/60 ring-1 ring-border/40">
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-out"
-                  style={{
-                    width: `${fillRatio * 100}%`,
-                    background: segColor,
-                    opacity: started ? (segReached ? 1 : 0.95) : 0,
-                  }}
-                />
+              {/* Segment bar — non-clipped wrapper so particles can fly out the
+                  top; the track/fill itself is clipped to the rounded shape. */}
+              <div className="relative h-[1.875rem] w-full">
+                <div className="absolute inset-0 overflow-hidden rounded-full bg-background/60 ring-1 ring-border/40">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-out"
+                    style={{
+                      width: `${fillRatio * 100}%`,
+                      background: segColor,
+                      opacity: started ? (segReached ? 1 : 0.95) : 0,
+                    }}
+                  />
+                </div>
+
+                {/* Always-present per-section particles: rise from the bottom of
+                    the bar and float up above it once the section is active. */}
+                {started && (
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    aria-hidden="true"
+                  >
+                    {PARTICLES.map((pt, p) => (
+                      <span
+                        key={p}
+                        className={cn(
+                          'absolute bottom-0 rounded-full',
+                          pt.tall ? 'animate-particle-tall' : 'animate-particle',
+                        )}
+                        style={{
+                          left: `${pt.left}%`,
+                          height: `${pt.size}px`,
+                          width: `${pt.size}px`,
+                          background: `color-mix(in oklch, ${segColor} 35%, white)`,
+                          boxShadow: `0 0 6px color-mix(in oklch, ${segColor} 80%, transparent)`,
+                          animationDelay: `${pt.delay}s`,
+                          // @ts-expect-error custom property for horizontal drift
+                          '--drift-x': `${pt.drift}px`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Icon centered under the segment */}
@@ -375,8 +426,8 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                     '0 0 22px color-mix(in oklch, var(--gold) 80%, transparent)',
                 }}
               />
-              {/* Particle burst emitted by the moving glow */}
-              {PARTICLES.map((pt, p) => (
+              {/* Dense particle trail dragged behind the moving glow */}
+              {ORB_TRAIL.map((pt, p) => (
                 <span
                   key={p}
                   className={cn(
@@ -386,7 +437,7 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                   style={{
                     height: `${pt.size}px`,
                     width: `${pt.size}px`,
-                    marginLeft: `${pt.drift}px`,
+                    marginLeft: `${pt.dx}px`,
                     background: 'color-mix(in oklch, var(--gold) 30%, white)',
                     boxShadow:
                       '0 0 6px color-mix(in oklch, var(--gold) 80%, transparent)',

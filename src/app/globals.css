@@ -331,7 +331,7 @@
   }
 }
 .animate-glow-travel {
-  animation: glow-travel 2.6s ease-in-out infinite;
+  animation: glow-travel 7s ease-in-out infinite;
 }
 
 /* Sliding sheen across a filled progress segment */
