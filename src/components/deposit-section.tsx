@@ -42,7 +42,7 @@ export function DepositSection() {
               ].map((item) => (
                 <li
                   key={item}
-                  className="flex items-center gap-2.5 text-muted-foreground"
+                  className="flex items-center gap-2.5 text-foreground"
                 >
                   <ShieldCheck
                     className="h-4 w-4 shrink-0 text-gold"
