@@ -77,7 +77,7 @@ export function Hero() {
         </h1>
 
         <p
-          className="hero-rise mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
+          className="hero-rise mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-foreground sm:text-lg"
           style={{ animationDelay: '2.0s' }}
         >
           The seed is in your hands. Deposit USDC, withdraw anytime, and let the

@@ -1,8 +1,4 @@
-"use client";
-
 import Image from "next/image";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type BrandLogoProps = {
@@ -16,17 +12,11 @@ const SIZES = {
 } as const;
 
 export function BrandLogo({ size = "sm", className }: BrandLogoProps) {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
-  const isDark = !mounted || resolvedTheme === "dark";
   const dim = SIZES[size];
 
   return (
     <Image
-      src={isDark ? "/logo-mark-gold.svg" : "/logo-mark.svg"}
+      src="/logo-mark.png"
       alt="PPP infinity tree logo"
       width={dim.width}
       height={dim.height}
@@ -35,11 +25,9 @@ export function BrandLogo({ size = "sm", className }: BrandLogoProps) {
         dim.className,
         "shrink-0 object-contain",
         size === "sm" ? "rounded-md" : "rounded-xl",
-        isDark
-          ? size === "sm"
-            ? "shadow-[0_0_12px_oklch(0.79_0.13_88_/_0.2)] ring-1 ring-gold/20"
-            : "shadow-[0_0_20px_oklch(0.79_0.13_88_/_0.3)] ring-1 ring-gold/20"
-          : "ring-1 ring-foreground/10",
+        size === "sm"
+          ? "shadow-[0_0_12px_oklch(0.79_0.13_88_/_0.2)] ring-1 ring-gold/20"
+          : "shadow-[0_0_20px_oklch(0.79_0.13_88_/_0.3)] ring-1 ring-gold/20",
         className,
       )}
     />
