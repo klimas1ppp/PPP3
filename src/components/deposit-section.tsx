@@ -33,19 +33,63 @@ export function DepositSection() {
               donated to sustainable impact in the Philippines.
             </p>
             <ul className="mt-6 flex flex-col gap-3 text-sm">
-              <li className="flex items-center gap-2.5 text-muted-foreground">
-                <ShieldCheck className="h-4 w-4 text-gold" aria-hidden="true" />
-                Non-custodial — withdraw your full principal anytime
-              </li>
-              <li className="flex items-center gap-2.5 text-muted-foreground">
-                <ShieldCheck className="h-4 w-4 text-gold" aria-hidden="true" />
-                100% of generated yield goes to real-world impact
-              </li>
-              <li className="flex items-center gap-2.5 text-muted-foreground">
-                <ShieldCheck className="h-4 w-4 text-gold" aria-hidden="true" />
-                Every transaction verifiable on Base
-              </li>
+              {[
+                "Non-custodial — withdraw your full or partial principal anytime",
+                "100% of generated yield goes to real-world impact",
+                "No touching your principal",
+                "No lock-ups",
+                "No fees",
+              ].map((item) => (
+                <li
+                  key={item}
+                  className="flex items-center gap-2.5 text-muted-foreground"
+                >
+                  <ShieldCheck
+                    className="h-4 w-4 shrink-0 text-gold"
+                    aria-hidden="true"
+                  />
+                  {item}
+                </li>
+              ))}
             </ul>
+
+            <div className="mt-8 rounded-2xl border border-border/50 bg-card/30 p-6">
+              <ul className="grid grid-cols-3 gap-4">
+                {[
+                  {
+                    src: "/logos/pooltogether.svg",
+                    alt: "PoolTogether",
+                    label: "Vault infrastructure",
+                  },
+                  {
+                    src: "/logos/aave.svg",
+                    alt: "Aave",
+                    label: "Yield generation",
+                  },
+                  {
+                    src: "/logos/base.svg",
+                    alt: "Base",
+                    label: "Settlement layer",
+                  },
+                ].map((partner) => (
+                  <li
+                    key={partner.alt}
+                    className="flex flex-col items-center gap-3 text-center"
+                  >
+                    <span className="flex h-8 w-full items-center justify-center px-1">
+                      <img
+                        src={partner.src || "/placeholder.svg"}
+                        alt={partner.alt}
+                        className="h-6 w-auto max-w-full object-contain"
+                      />
+                    </span>
+                    <span className="text-[0.7rem] font-medium uppercase leading-tight tracking-[0.14em] text-muted-foreground">
+                      {partner.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <VaultPanel />

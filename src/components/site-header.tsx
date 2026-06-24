@@ -68,7 +68,7 @@ export function SiteHeader() {
           className="flex items-center gap-2"
           onClick={() => setOpen(false)}
         >
-          <BrandLogo size="sm" />
+          <BrandLogo size="sm" className="h-12 w-12 rounded-xl" />
           <span className="font-heading text-xl font-semibold leading-none tracking-wide text-gold">
             PPP
           </span>
