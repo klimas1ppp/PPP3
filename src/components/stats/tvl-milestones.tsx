@@ -174,133 +174,130 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
         </div>
       </div>
 
-      {/* Segmented milestone progress bar */}
-      <div className="mt-8">
-        <div className="relative flex h-5 w-full items-stretch gap-1.5">
-          {MILESTONES.slice(1).map((seg, idx) => {
-            const lo = MILESTONES[idx].threshold
-            const hi = seg.threshold
-            const fillRatio = Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
-            const reached = tvl >= hi
-            const started = tvl > lo
-            const color = seg.color ?? 'var(--gold)'
-            return (
-              <div
-                key={seg.title}
-                className="relative h-full flex-1 overflow-hidden rounded-full bg-background/60 ring-1 ring-border/40"
-              >
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-out"
-                  style={{
-                    width: `${fillRatio * 100}%`,
-                    background: color,
-                    boxShadow: started
-                      ? `0 0 14px color-mix(in oklch, ${color} 70%, transparent)`
-                      : 'none',
-                    opacity: started ? (reached ? 1 : 0.95) : 0,
-                  }}
-                >
-                  {/* sliding sheen */}
-                  {started && (
-                    <span
-                      className="animate-sheen absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-20deg]"
-                      style={{
-                        background:
-                          'linear-gradient(90deg, transparent, color-mix(in oklch, white 55%, transparent), transparent)',
-                      }}
-                      aria-hidden="true"
-                    />
-                  )}
-                  {/* rising particles on reached segments */}
-                  {reached &&
-                    [20, 50, 80].map((leftPct, p) => (
+      {/* Segmented milestone progress bar with icons centered beneath each segment */}
+      <div className="mt-8 flex w-full items-stretch gap-1.5">
+        {MILESTONES.map((m, i) => {
+          const reached = tvl >= m.threshold
+          const isActive = i === activeIndex
+          const Icon = m.icon
+          const color = m.color ?? 'var(--gold)'
+
+          // Segment leading INTO this milestone (from the previous threshold).
+          const prev = MILESTONES[i - 1]
+          const hasSegment = i > 0 && Boolean(prev)
+          const lo = prev?.threshold ?? 0
+          const hi = m.threshold
+          const fillRatio = hasSegment
+            ? Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+            : 0
+          const started = hasSegment && tvl > lo
+
+          return (
+            <button
+              key={m.title}
+              type="button"
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              onFocus={() => setHovered(i)}
+              onBlur={() => setHovered(null)}
+              onClick={() => setHovered(i)}
+              aria-label={`${m.title} — ${fmtCompact(m.threshold)} TVL`}
+              className="group flex flex-1 flex-col items-center gap-3 text-center focus:outline-none"
+            >
+              {/* Segment bar */}
+              <div className="relative h-[1.875rem] w-full overflow-hidden rounded-full bg-background/60 ring-1 ring-border/40">
+                {hasSegment && (
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-out"
+                    style={{
+                      width: `${fillRatio * 100}%`,
+                      background: color,
+                      boxShadow: started
+                        ? `0 0 14px color-mix(in oklch, ${color} 70%, transparent)`
+                        : 'none',
+                      opacity: started ? (reached ? 1 : 0.95) : 0,
+                    }}
+                  >
+                    {/* sliding sheen */}
+                    {started && (
                       <span
-                        key={p}
-                        className="animate-particle absolute bottom-0 h-1 w-1 rounded-full"
+                        className="animate-sheen absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-20deg]"
                         style={{
-                          left: `${leftPct}%`,
-                          background: 'color-mix(in oklch, white 70%, transparent)',
-                          animationDelay: `${p * 0.7}s`,
+                          background:
+                            'linear-gradient(90deg, transparent, color-mix(in oklch, white 55%, transparent), transparent)',
                         }}
                         aria-hidden="true"
                       />
-                    ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Milestone nodes */}
-        <div className="relative mt-3 flex justify-between">
-          {MILESTONES.map((m, i) => {
-            const reached = tvl >= m.threshold
-            const isActive = i === activeIndex
-            const Icon = m.icon
-            const color = m.color ?? 'var(--gold)'
-            return (
-              <button
-                key={m.title}
-                type="button"
-                onMouseEnter={() => setHovered(i)}
-                onMouseLeave={() => setHovered(null)}
-                onFocus={() => setHovered(i)}
-                onBlur={() => setHovered(null)}
-                onClick={() => setHovered(i)}
-                aria-label={`${m.title} — ${fmtCompact(m.threshold)} TVL`}
-                className="group flex flex-1 flex-col items-center gap-1.5 text-center focus:outline-none"
-              >
-                <span className="relative flex items-center justify-center">
-                  {isActive && (
-                    <span
-                      className="animate-pulse-ring absolute h-7 w-7 rounded-full"
-                      style={{ background: color, opacity: 0.5 }}
-                      aria-hidden="true"
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      'relative flex h-7 w-7 items-center justify-center rounded-full border transition-transform duration-200 group-hover:scale-110',
                     )}
-                    style={
-                      reached
-                        ? {
-                            background: color,
-                            borderColor: color,
-                            color: 'var(--background)',
-                            boxShadow: `0 0 12px color-mix(in oklch, ${color} 65%, transparent)`,
-                          }
-                        : {
-                            background: 'var(--card)',
-                            borderColor: 'var(--border)',
-                            color: 'var(--muted-foreground)',
-                          }
-                    }
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                  </span>
-                </span>
+                    {/* rising particles on reached segments */}
+                    {reached &&
+                      [20, 50, 80].map((leftPct, p) => (
+                        <span
+                          key={p}
+                          className="animate-particle absolute bottom-0 h-1 w-1 rounded-full"
+                          style={{
+                            left: `${leftPct}%`,
+                            background:
+                              'color-mix(in oklch, white 70%, transparent)',
+                            animationDelay: `${p * 0.7}s`,
+                          }}
+                          aria-hidden="true"
+                        />
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Icon centered under the segment */}
+              <span className="relative flex items-center justify-center">
+                {isActive && (
+                  <span
+                    className="animate-pulse-ring absolute h-7 w-7 rounded-full"
+                    style={{ background: color, opacity: 0.5 }}
+                    aria-hidden="true"
+                  />
+                )}
                 <span
-                  className={cn(
-                    'text-[0.65rem] font-semibold tabular-nums sm:text-xs',
-                    reached ? 'text-foreground' : 'text-muted-foreground/60',
-                  )}
+                  className="relative flex h-7 w-7 items-center justify-center rounded-full border transition-transform duration-200 group-hover:scale-110"
+                  style={
+                    reached
+                      ? {
+                          background: color,
+                          borderColor: color,
+                          color: 'var(--background)',
+                          boxShadow: `0 0 12px color-mix(in oklch, ${color} 65%, transparent)`,
+                        }
+                      : {
+                          background: 'var(--card)',
+                          borderColor: 'var(--border)',
+                          color: 'var(--muted-foreground)',
+                        }
+                  }
                 >
-                  {fmtCompact(m.threshold)}
+                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
-                <span
-                  className={cn(
-                    'hidden max-w-[8rem] text-[0.7rem] leading-tight lg:block',
-                    reached ? 'text-muted-foreground' : 'text-muted-foreground/50',
-                    display === i && 'text-gold',
-                  )}
-                >
-                  {m.title}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+              </span>
+
+              <span
+                className={cn(
+                  'text-[0.65rem] font-semibold tabular-nums sm:text-xs',
+                  reached ? 'text-foreground' : 'text-muted-foreground/60',
+                )}
+              >
+                {fmtCompact(m.threshold)}
+              </span>
+              <span
+                className={cn(
+                  'hidden max-w-[8rem] text-[0.7rem] leading-tight lg:block',
+                  reached ? 'text-muted-foreground' : 'text-muted-foreground/50',
+                  display === i && 'text-gold',
+                )}
+              >
+                {m.title}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
