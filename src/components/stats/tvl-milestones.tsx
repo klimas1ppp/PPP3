@@ -9,6 +9,7 @@ import {
   Building2,
   Globe2,
   Play,
+  Pause,
   RotateCcw,
   type LucideIcon,
 } from 'lucide-react'
@@ -153,11 +154,24 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
     setSimValue(0)
     setSimRunning(true)
   }
+  const stopSimulation = () => {
+    // Pause in place: halt the animation but keep the current simulated value.
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    setSimRunning(false)
+  }
+  const resumeSimulation = () => {
+    // Continue the sweep from wherever it was paused.
+    setSimRunning(true)
+  }
   const resetSimulation = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
     setSimRunning(false)
     setSimValue(null)
   }
+
+  // Paused = a simulation is active but not currently animating, and not yet
+  // at the final goal.
+  const isPaused = isSimulating && !simRunning && (simValue ?? 0) < finalGoalValue
 
   // Highest milestone whose threshold has been reached.
   let activeIndex = 0
@@ -205,14 +219,35 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             )}
           </div>
           {isSimulating ? (
-            <button
-              type="button"
-              onClick={resetSimulation}
-              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-gold/50 hover:text-gold"
-            >
-              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-              Reset
-            </button>
+            <div className="flex items-center gap-2">
+              {simRunning ? (
+                <button
+                  type="button"
+                  onClick={stopSimulation}
+                  className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:bg-gold/20"
+                >
+                  <Pause className="h-3.5 w-3.5" aria-hidden="true" />
+                  Stop
+                </button>
+              ) : isPaused ? (
+                <button
+                  type="button"
+                  onClick={resumeSimulation}
+                  className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:bg-gold/20"
+                >
+                  <Play className="h-3.5 w-3.5" aria-hidden="true" />
+                  Resume
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={resetSimulation}
+                className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-gold/50 hover:text-gold"
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                Reset
+              </button>
+            </div>
           ) : (
             <button
               type="button"
