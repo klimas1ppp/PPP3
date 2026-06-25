@@ -120,7 +120,7 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
 
   useEffect(() => {
     if (!simRunning) return
-    const duration = 14400 // ms for full sweep (slowed 60% from 9000ms)
+    const duration = 27360 // ms for full sweep (slowed a further 90% from 14400ms)
     const start = performance.now()
     const startValue = simValue ?? 0
     const remaining = 1 - startValue / finalGoalValue
@@ -399,15 +399,16 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
         })}
         </div>
 
-        {/* Single glow "comet" that travels left -> right across the reached
-            portion of the bar, dragging a trail of particles with it. */}
+        {/* Single glow orb pinned to the leading edge of the filled portion.
+            As progress grows it travels along once and then rests at the
+            current TVL position, pulsing and glowing — it never disappears. */}
         {overallPct > 0 && (
           <div
             className="pointer-events-none absolute left-0 top-0 h-[1.875rem]"
             style={{ width: `${overallPct}%` }}
             aria-hidden="true"
           >
-            <span className="animate-glow-travel absolute top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <span className="absolute left-full top-1/2 -translate-x-1/2 -translate-y-1/2">
               {/* Core glow orb */}
               <span
                 className="animate-orb-pulse block h-10 w-10 rounded-full"
