@@ -45,8 +45,7 @@ export function HowItWorks() {
           </h2>
           <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
             PPP is a <strong className="kw">non-profit organization</strong>.
-            Principal-preserving philanthropy turns idle capital into a
-            renewable engine for good — you never give away your money, only the
+            Park your idle capital and put it to work for good. — you never give away your money, only the
             yield it produces. The result:{' '}
             <strong className="kw text-gold">possible infinite impact</strong>{' '}
             from capital that stays entirely yours.
