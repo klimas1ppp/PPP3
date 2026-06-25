@@ -48,7 +48,8 @@ export function HowItWorks() {
             Park your idle capital and put it to work for good. — you never give away your money, only the
             yield it produces. The result:{' '}
             <strong className="kw text-gold">possible infinite impact</strong>{' '}
-            from capital that stays entirely yours.
+            from capital that stays entirely yours. Every step runs on smart contracts you can inspect —
+            no middlemen, no lock-ups, no touching your principal.
           </p>
         </div>
 
