@@ -119,7 +119,7 @@ export const IMPACT_ALLOCATION = [
   { name: 'Funding startups', value: 11, fill: 'var(--color-teal-soft)' },
   { name: 'Water systems', value: 8, fill: 'var(--color-chart-5)' },
   { name: 'Housing & infrastructure', value: 11, fill: 'var(--color-gold-soft)' },
-  { name: 'Natural disaster reserves', value: 8, fill: 'var(--color-teal)' },
+  { name: 'Natural disaster reserves', value: 8, fill: '#dc2626' },
 ]
 
 // Weekly TVL history (in thousands of USDC) across the last ~8 months.
