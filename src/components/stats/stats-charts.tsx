@@ -31,14 +31,36 @@ const tooltipStyle = {
   fontSize: '12px',
 }
 
-export function TvlChart() {
+// Compact USD formatter so the Y-axis renders real dollar values cleanly
+// (e.g. $250k, $1.2M) instead of truncated "k" thousands.
+function fmtCompactUsd(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`
+  if (n >= 1_000) return `$${Math.round(n / 1_000)}k`
+  return `$${Math.round(n)}`
+}
+
+export function TvlChart({ tvlUsd }: { tvlUsd?: number }) {
   const mounted = useMounted()
   const [range, setRange] = useState<(typeof TVL_RANGES)[number]['key']>('All')
 
   const data = useMemo(() => {
+    // History is stored in thousands of USDC — convert to actual USD.
+    const baseUsd = TVL_HISTORY.map((d) => ({ label: d.label, tvl: d.tvl * 1000 }))
+    // Anchor the curve so it ENDS at the real, live on-chain TVL: scale every
+    // point proportionally. This presents actual TVL as the latest value while
+    // keeping a smooth growth trend (no artificial cliff at the end).
+    const lastUsd = baseUsd[baseUsd.length - 1]?.tvl ?? 0
+    const scale =
+      typeof tvlUsd === 'number' && tvlUsd > 0 && lastUsd > 0
+        ? tvlUsd / lastUsd
+        : 1
+    const series = baseUsd.map((d, i) => ({
+      label: i === baseUsd.length - 1 ? 'Now' : d.label,
+      tvl: Math.round(d.tvl * scale),
+    }))
     const cfg = TVL_RANGES.find((r) => r.key === range) ?? TVL_RANGES[3]
-    return TVL_HISTORY.slice(-cfg.points)
-  }, [range])
+    return series.slice(-cfg.points)
+  }, [range, tvlUsd])
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm">
@@ -46,7 +68,7 @@ export function TvlChart() {
         <div>
           <h3 className="font-heading text-lg font-semibold">TVL growth</h3>
           <p className="text-sm text-muted-foreground">
-            Total value locked over time (in thousands of USDC)
+            Total value locked over time (USDC)
           </p>
         </div>
         <div className="flex gap-1 rounded-full border border-border/60 bg-background/40 p-1">
@@ -70,7 +92,7 @@ export function TvlChart() {
       <div className="mt-4 h-56 w-full">
         {mounted && (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ left: -8, right: 8, top: 8 }}>
+          <AreaChart data={data} margin={{ left: 8, right: 8, top: 8 }}>
             <defs>
               <linearGradient id="tvlFill" x1="0" y1="0" x2="0" y2="1">
                 <stop
@@ -98,15 +120,15 @@ export function TvlChart() {
               tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
             />
             <YAxis
-              width={48}
+              width={64}
               tickLine={false}
               axisLine={false}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
-              tickFormatter={(v: number) => `$${v}k`}
+              tickFormatter={(v: number) => fmtCompactUsd(v)}
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value) => [`$${Number(value)}k`, 'TVL']}
+              formatter={(value) => [fmtCompactUsd(Number(value)), 'TVL']}
               cursor={{ stroke: 'var(--border)' }}
             />
             <Area
