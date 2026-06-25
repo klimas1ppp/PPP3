@@ -467,7 +467,7 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                 {i === leadingIndex && (
                   <span
                     className="pointer-events-none absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-1000 ease-out"
-                    style={{ left: `${leadingFillRatio * 100}%`, opacity: 0.5 }}
+                    style={{ left: `${leadingFillRatio * 100}%`, opacity: 1 }}
                     aria-hidden="true"
                   >
                     <span
