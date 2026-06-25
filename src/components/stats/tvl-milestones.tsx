@@ -229,14 +229,12 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
   let leadingFillRatio = 0
   for (let i = 0; i < MILESTONES.length; i++) {
     const m = MILESTONES[i]
-    const nextM = MILESTONES[i + 1]
     const prevM = MILESTONES[i - 1]
-    const isLast = !nextM
-    // Mirror the segment fill logic: the final segment fills gradually from the
-    // previous milestone up to its own threshold, so the orb tracks it too.
-    const lo = isLast ? (prevM?.threshold ?? 0) : m.threshold
-    const hi = isLast ? m.threshold : nextM.threshold
-    const fr = Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+    // Mirror the segment fill logic: each column fills from the previous
+    // milestone up to this one, so the orb tracks the true progress edge.
+    const lo = prevM?.threshold ?? 0
+    const hi = m.threshold
+    const fr = i === 0 ? 1 : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
     if (fr > 0) {
       leadingIndex = i
       leadingFillRatio = fr
@@ -374,26 +372,25 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             const isActive = i === activeIndex
             const Icon = m.icon
 
-            // Each column shows the segment growing OUT of this milestone toward
-            // the next one, so the very first segment (Launch -> First Yield)
-            // begins filling immediately as TVL rises from $0. The final column
-            // (no next milestone) acts as a "cap" that fills fully once its own
-            // threshold (the goal) is reached, so it is never left colorless.
+            // Each column represents progress toward reaching THIS milestone,
+            // filling gradually from the previous milestone's threshold up to
+            // this one. The first column (Launch at $0) is the origin and is
+            // always complete. This maps all 6 columns to the 5 real ranges
+            // plus the launch origin, with no duplicated range.
             const nextM = MILESTONES[i + 1]
             const prevM = MILESTONES[i - 1]
             const isLast = !nextM
-            // Non-final segments fill from this milestone toward the next one.
-            // The final segment has no "next", so it fills gradually from the
-            // PREVIOUS milestone up to its own threshold — just like the others,
-            // instead of snapping straight to full once reached.
-            const lo = isLast ? (prevM?.threshold ?? 0) : m.threshold
-            const hi = isLast ? m.threshold : nextM.threshold
-            const fillRatio = Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
-            // The final cap segment uses gold; non-final segments take the
-            // color of the milestone they lead into.
+            const isFirst = i === 0
+            const lo = prevM?.threshold ?? 0
+            const hi = m.threshold
+            const fillRatio = isFirst
+              ? 1
+              : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+            // Keep the tuned per-column color sequence: non-final columns use
+            // the color of the milestone they lead into; the final column is gold.
             const segColor = isLast ? 'oklch(0.79 0.13 88)' : (nextM?.color ?? 'oklch(0.79 0.13 88)')
-            const started = tvl > lo
-            const segReached = tvl >= hi
+            const started = isFirst || tvl > lo
+            const segReached = isFirst || tvl >= hi
 
             return (
             <button
