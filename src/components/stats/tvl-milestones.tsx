@@ -78,6 +78,26 @@ const MILESTONES: Milestone[] = [
   },
 ]
 
+/**
+ * The TVL value range that a given progress-bar column fills across.
+ *
+ * There are 6 milestone columns but only 5 natural ranges between the
+ * thresholds, so the large final $1M -> $2M range is split evenly across the
+ * last two columns. This lets progress flow continuously from the very first
+ * column to the last, with every column filling gradually (no permanently-full
+ * origin column and no column that snaps straight to full).
+ */
+function segmentRange(i: number): { lo: number; hi: number } {
+  const count = MILESTONES.length
+  const finalLo = MILESTONES[count - 2].threshold
+  const finalHi = MILESTONES[count - 1].threshold
+  const finalMid = (finalLo + finalHi) / 2
+
+  if (i === count - 2) return { lo: finalLo, hi: finalMid }
+  if (i === count - 1) return { lo: finalMid, hi: finalHi }
+  return { lo: MILESTONES[i].threshold, hi: MILESTONES[i + 1].threshold }
+}
+
 /** Unified accent used for every milestone icon, regardless of segment color. */
 const ICON_COLOR = 'oklch(0.79 0.13 88)'
 
@@ -228,13 +248,9 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
   let leadingIndex = -1
   let leadingFillRatio = 0
   for (let i = 0; i < MILESTONES.length; i++) {
-    const m = MILESTONES[i]
-    const prevM = MILESTONES[i - 1]
-    // Mirror the segment fill logic: each column fills from the previous
-    // milestone up to this one, so the orb tracks the true progress edge.
-    const lo = prevM?.threshold ?? 0
-    const hi = m.threshold
-    const fr = i === 0 ? 1 : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+    // Mirror the column fill logic so the orb sits exactly at the progress edge.
+    const { lo, hi } = segmentRange(i)
+    const fr = Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
     if (fr > 0) {
       leadingIndex = i
       leadingFillRatio = fr
@@ -372,25 +388,19 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             const isActive = i === activeIndex
             const Icon = m.icon
 
-            // Each column represents progress toward reaching THIS milestone,
-            // filling gradually from the previous milestone's threshold up to
-            // this one. The first column (Launch at $0) is the origin and is
-            // always complete. This maps all 6 columns to the 5 real ranges
-            // plus the launch origin, with no duplicated range.
-            const nextM = MILESTONES[i + 1]
-            const prevM = MILESTONES[i - 1]
-            const isLast = !nextM
-            const isFirst = i === 0
-            const lo = prevM?.threshold ?? 0
-            const hi = m.threshold
-            const fillRatio = isFirst
-              ? 1
-              : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
-            // Keep the tuned per-column color sequence: non-final columns use
-            // the color of the milestone they lead into; the final column is gold.
-            const segColor = isLast ? 'oklch(0.79 0.13 88)' : (nextM?.color ?? 'oklch(0.79 0.13 88)')
-            const started = isFirst || tvl > lo
-            const segReached = isFirst || tvl >= hi
+            // Continuous left-to-right fill: each column covers a sub-range of
+            // the $0 -> goal journey so progress visibly begins in the FIRST
+            // column (instead of the Launch column being permanently full).
+            // There are 6 columns but only 5 natural ranges, so the large final
+            // $1M -> $2M range is split across the last two columns; this keeps
+            // every bar filling gradually with no duplicated or snapping bar.
+            const { lo, hi } = segmentRange(i)
+            const fillRatio = Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+            // Per-column color sequence: each column takes the color of the
+            // next milestone; the final column is gold.
+            const segColor = MILESTONES[i + 1]?.color ?? 'oklch(0.79 0.13 88)'
+            const started = tvl > lo
+            const segReached = tvl >= hi
 
             return (
             <button
@@ -457,7 +467,7 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                 {i === leadingIndex && (
                   <span
                     className="pointer-events-none absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-1000 ease-out"
-                    style={{ left: `${leadingFillRatio * 100}%` }}
+                    style={{ left: `${leadingFillRatio * 100}%`, opacity: 0.5 }}
                     aria-hidden="true"
                   >
                     <span
