@@ -11,6 +11,8 @@ import {
   Play,
   Pause,
   RotateCcw,
+  TrendingDown,
+  ArrowLeftRight,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -81,14 +83,21 @@ const ICON_COLOR = 'oklch(0.79 0.13 88)'
 
 /** Particle field rendered over each reached/started segment (always present). */
 const PARTICLES = [
-  { left: 12, size: 3, delay: 0, drift: -4, tall: false },
-  { left: 24, size: 2, delay: 0.9, drift: 3, tall: true },
-  { left: 36, size: 3, delay: 1.6, drift: -2, tall: false },
-  { left: 48, size: 2, delay: 0.4, drift: 5, tall: true },
-  { left: 58, size: 4, delay: 2.1, drift: -3, tall: false },
-  { left: 68, size: 2, delay: 1.2, drift: 4, tall: true },
-  { left: 80, size: 3, delay: 0.6, drift: -5, tall: false },
-  { left: 90, size: 2, delay: 1.8, drift: 2, tall: true },
+  { left: 8, size: 5, delay: 0, drift: -4, tall: false },
+  { left: 14, size: 3, delay: 0.5, drift: 3, tall: true },
+  { left: 20, size: 6, delay: 1.1, drift: -3, tall: false },
+  { left: 28, size: 3, delay: 1.8, drift: 5, tall: true },
+  { left: 34, size: 7, delay: 0.3, drift: -2, tall: false },
+  { left: 40, size: 4, delay: 2.1, drift: 4, tall: true },
+  { left: 46, size: 5, delay: 0.9, drift: -5, tall: false },
+  { left: 52, size: 3, delay: 1.4, drift: 3, tall: true },
+  { left: 58, size: 6, delay: 0.2, drift: -3, tall: false },
+  { left: 64, size: 4, delay: 1.7, drift: 5, tall: true },
+  { left: 70, size: 7, delay: 0.7, drift: -4, tall: false },
+  { left: 76, size: 3, delay: 2.3, drift: 2, tall: true },
+  { left: 82, size: 5, delay: 1.0, drift: -2, tall: false },
+  { left: 88, size: 4, delay: 0.4, drift: 4, tall: true },
+  { left: 94, size: 6, delay: 1.5, drift: -3, tall: false },
 ] as const
 
 function fmtCompact(n: number) {
@@ -114,9 +123,11 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
   const realTvl = tvlUsd ?? 0
   const finalGoalValue = MILESTONES[MILESTONES.length - 1].threshold
 
-  // Demo simulation: sweep TVL from 0 up to the final goal.
+  // Demo simulation: sweep TVL up (deposits) toward the goal, or down
+  // (withdrawals) toward zero, so the orb can be verified moving both ways.
   const [simValue, setSimValue] = useState<number | null>(null)
   const [simRunning, setSimRunning] = useState(false)
+  const [simDir, setSimDir] = useState<'up' | 'down'>('up')
   const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -124,19 +135,22 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
     const duration = 27360 // ms for full sweep (slowed a further 90% from 14400ms)
     const start = performance.now()
     const startValue = simValue ?? 0
-    const remaining = 1 - startValue / finalGoalValue
+    const target = simDir === 'down' ? 0 : finalGoalValue
+    // Pace the sweep relative to the remaining fraction of the full range so
+    // partial sweeps (e.g. after a pause or reverse) keep a consistent speed.
+    const remaining = Math.abs(target - startValue) / finalGoalValue
 
     const tick = (now: number) => {
       const elapsed = now - start
-      // ease-out so it slows as it approaches the goal
       const linear = Math.min(1, elapsed / (duration * Math.max(remaining, 0.0001)))
+      // ease-out so it slows as it approaches the target
       const eased = 1 - Math.pow(1 - linear, 2)
-      const value = startValue + (finalGoalValue - startValue) * eased
+      const value = startValue + (target - startValue) * eased
       setSimValue(value)
       if (linear < 1) {
         rafRef.current = requestAnimationFrame(tick)
       } else {
-        setSimValue(finalGoalValue)
+        setSimValue(target)
         setSimRunning(false)
       }
     }
@@ -145,13 +159,26 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simRunning])
+  }, [simRunning, simDir])
 
   const isSimulating = simValue !== null
   const tvl = isSimulating ? (simValue as number) : realTvl
 
   const startSimulation = () => {
+    setSimDir('up')
     setSimValue(0)
+    setSimRunning(true)
+  }
+  const startWithdrawal = () => {
+    // Simulate withdrawals: begin fully funded and sweep down to zero.
+    setSimDir('down')
+    setSimValue(finalGoalValue)
+    setSimRunning(true)
+  }
+  const reverseSimulation = () => {
+    // Flip direction in place; the effect restarts from the current value.
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    setSimDir((d) => (d === 'up' ? 'down' : 'up'))
     setSimRunning(true)
   }
   const stopSimulation = () => {
@@ -167,11 +194,16 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
     setSimRunning(false)
     setSimValue(null)
+    setSimDir('up')
   }
 
-  // Paused = a simulation is active but not currently animating, and not yet
-  // at the final goal.
-  const isPaused = isSimulating && !simRunning && (simValue ?? 0) < finalGoalValue
+  // Paused = a simulation is active but not animating, and not yet parked at
+  // the boundary for its current direction.
+  const atBoundary =
+    simDir === 'down'
+      ? (simValue ?? 0) <= 0
+      : (simValue ?? 0) >= finalGoalValue
+  const isPaused = isSimulating && !simRunning && !atBoundary
 
   // Highest milestone whose threshold has been reached.
   let activeIndex = 0
@@ -264,6 +296,14 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
               ) : null}
               <button
                 type="button"
+                onClick={reverseSimulation}
+                className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:bg-gold/20"
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden="true" />
+                {simDir === 'up' ? 'Withdraw' : 'Deposit'}
+              </button>
+              <button
+                type="button"
                 onClick={resetSimulation}
                 className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-gold/50 hover:text-gold"
               >
@@ -272,14 +312,24 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={startSimulation}
-              className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:bg-gold/20"
-            >
-              <Play className="h-3.5 w-3.5" aria-hidden="true" />
-              Simulate growth
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={startSimulation}
+                className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-medium text-gold transition-colors hover:bg-gold/20"
+              >
+                <Play className="h-3.5 w-3.5" aria-hidden="true" />
+                Simulate growth
+              </button>
+              <button
+                type="button"
+                onClick={startWithdrawal}
+                className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-gold/50 hover:text-gold"
+              >
+                <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" />
+                Simulate withdrawal
+              </button>
+            </div>
           )}
         </div>
       </div>
