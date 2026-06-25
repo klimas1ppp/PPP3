@@ -1,4 +1,5 @@
 import { Wallet, TrendingUp, HeartHandshake, RefreshCw } from 'lucide-react'
+import { SectionDecor } from './decor/section-decor'
 
 const STEPS = [
   {
@@ -33,11 +34,7 @@ export function HowItWorks() {
           'linear-gradient(180deg, var(--background), var(--section-tint), var(--background))',
       }}
     >
-      <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden="true" />
-      <div
-        className="glow-gold pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2"
-        aria-hidden="true"
-      />
+      <SectionDecor pattern="grid" variant="mixed" seed={1} network />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-gold">
