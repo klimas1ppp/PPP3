@@ -75,6 +75,9 @@ const MILESTONES: Milestone[] = [
   },
 ]
 
+/** Unified accent used for every milestone icon, regardless of segment color. */
+const ICON_COLOR = 'oklch(0.79 0.13 88)'
+
 /** Particle field rendered over each reached/started segment (always present). */
 const PARTICLES = [
   { left: 12, size: 3, delay: 0, drift: -4, tall: false },
@@ -85,35 +88,6 @@ const PARTICLES = [
   { left: 68, size: 2, delay: 1.2, drift: 4, tall: true },
   { left: 80, size: 3, delay: 0.6, drift: -5, tall: false },
   { left: 90, size: 2, delay: 1.8, drift: 2, tall: true },
-] as const
-
-/** Extra burst emitted by a section while the orb is passing through it. */
-const EXTRA_BURST = [
-  { left: 8, size: 3, delay: 0, drift: -3, tall: true },
-  { left: 18, size: 2, delay: 0.15, drift: 4, tall: false },
-  { left: 30, size: 4, delay: 0.3, drift: -2, tall: true },
-  { left: 42, size: 2, delay: 0.45, drift: 3, tall: false },
-  { left: 54, size: 3, delay: 0.2, drift: -4, tall: true },
-  { left: 64, size: 2, delay: 0.5, drift: 2, tall: false },
-  { left: 74, size: 4, delay: 0.35, drift: -3, tall: true },
-  { left: 84, size: 2, delay: 0.1, drift: 4, tall: false },
-  { left: 94, size: 3, delay: 0.4, drift: -2, tall: true },
-] as const
-
-/** Dense particle trail dragged behind the moving glow orb. */
-const ORB_TRAIL = [
-  { dx: 2, size: 3, delay: 0, drift: 2, tall: false },
-  { dx: -4, size: 2, delay: 0.25, drift: -3, tall: true },
-  { dx: -9, size: 4, delay: 0.5, drift: 2, tall: false },
-  { dx: -14, size: 2, delay: 0.75, drift: -2, tall: true },
-  { dx: -19, size: 3, delay: 1.0, drift: 3, tall: false },
-  { dx: -24, size: 2, delay: 1.25, drift: -4, tall: true },
-  { dx: -29, size: 3, delay: 1.5, drift: 2, tall: false },
-  { dx: -34, size: 2, delay: 1.75, drift: -2, tall: true },
-  { dx: -6, size: 2, delay: 0.4, drift: 4, tall: true },
-  { dx: -12, size: 3, delay: 0.65, drift: -3, tall: false },
-  { dx: -18, size: 2, delay: 0.9, drift: 3, tall: true },
-  { dx: -26, size: 2, delay: 1.15, drift: -2, tall: false },
 ] as const
 
 function fmtCompact(n: number) {
@@ -200,33 +174,6 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
   // Overall progress toward the final milestone (for the headline %).
   const finalGoal = MILESTONES[MILESTONES.length - 1].threshold
   const overallPct = Math.min(100, (tvl / finalGoal) * 100)
-
-  // Track which section the traveling glow orb is currently over so that
-  // section can emit an extra particle burst as the orb passes through it.
-  // The orb sweeps the reached portion (0 -> overallPct%) every 7s, matching
-  // the `glow-travel` CSS animation period.
-  const overallPctRef = useRef(overallPct)
-  overallPctRef.current = overallPct
-  const [orbSection, setOrbSection] = useState(-1)
-  const orbSectionRef = useRef(-1)
-
-  useEffect(() => {
-    let raf = 0
-    const period = 7000
-    const segCount = MILESTONES.length
-    const loop = (now: number) => {
-      const phase = (now % period) / period
-      const pos = (phase * overallPctRef.current) / 100 // 0..(overallPct/100)
-      const sec = pos <= 0 ? -1 : Math.min(segCount - 1, Math.floor(pos * segCount))
-      if (sec !== orbSectionRef.current) {
-        orbSectionRef.current = sec
-        setOrbSection(sec)
-      }
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
-  }, [])
 
   return (
     <div className="mt-14 rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm sm:p-8">
@@ -319,7 +266,6 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             const reached = tvl >= m.threshold
             const isActive = i === activeIndex
             const Icon = m.icon
-            const color = m.color ?? 'var(--gold)'
 
             // Each column shows the segment growing OUT of this milestone toward
             // the next one, so the very first segment (Launch -> First Yield)
@@ -356,9 +302,9 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
               {/* Segment bar — non-clipped wrapper so particles can fly out the
                   top; the track/fill itself is clipped to the rounded shape. */}
               <div className="relative h-[1.875rem] w-full">
-                <div className="absolute inset-0 overflow-hidden rounded-full bg-background/60 ring-1 ring-border/40">
+                <div className="absolute inset-0 overflow-hidden rounded-md bg-background/60 ring-1 ring-border/40">
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-out"
+                    className="absolute inset-y-0 left-0 rounded-md transition-[width] duration-1000 ease-out"
                     style={{
                       width: `${fillRatio * 100}%`,
                       background: segColor,
@@ -395,43 +341,14 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                     ))}
                   </div>
                 )}
-
-                {/* Temporary extra burst that fires while the traveling orb is
-                    crossing THIS section. */}
-                {started && orbSection === i && (
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    aria-hidden="true"
-                  >
-                    {EXTRA_BURST.map((pt, p) => (
-                      <span
-                        key={p}
-                        className={cn(
-                          'absolute bottom-0 rounded-full',
-                          pt.tall ? 'animate-particle-tall' : 'animate-particle',
-                        )}
-                        style={{
-                          left: `${pt.left}%`,
-                          height: `${pt.size}px`,
-                          width: `${pt.size}px`,
-                          background: `color-mix(in oklch, ${segColor} 25%, white)`,
-                          boxShadow: `0 0 8px color-mix(in oklch, ${segColor} 90%, transparent)`,
-                          animationDelay: `${pt.delay}s`,
-                          // @ts-expect-error custom property for horizontal drift
-                          '--drift-x': `${pt.drift}px`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* Icon centered under the segment */}
+              {/* Icon centered under the segment — unified accent color */}
               <span className="relative flex items-center justify-center">
                 {isActive && (
                   <span
                     className="animate-pulse-ring absolute h-7 w-7 rounded-full"
-                    style={{ background: color, opacity: 0.5 }}
+                    style={{ background: ICON_COLOR, opacity: 0.5 }}
                     aria-hidden="true"
                   />
                 )}
@@ -440,10 +357,10 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                   style={
                     reached
                       ? {
-                          background: color,
-                          borderColor: color,
+                          background: ICON_COLOR,
+                          borderColor: ICON_COLOR,
                           color: 'var(--background)',
-                          boxShadow: `0 0 12px color-mix(in oklch, ${color} 65%, transparent)`,
+                          boxShadow: `0 0 12px color-mix(in oklch, ${ICON_COLOR} 65%, transparent)`,
                         }
                       : {
                           background: 'var(--card)',
@@ -489,35 +406,14 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             <span className="animate-glow-travel absolute top-1/2 -translate-x-1/2 -translate-y-1/2">
               {/* Core glow orb */}
               <span
-                className="block h-6 w-6 rounded-full"
+                className="block h-10 w-10 rounded-full"
                 style={{
                   background:
-                    'radial-gradient(circle, color-mix(in oklch, white 85%, transparent) 0%, color-mix(in oklch, var(--gold) 70%, transparent) 45%, transparent 72%)',
+                    'radial-gradient(circle, color-mix(in oklch, white 90%, transparent) 0%, color-mix(in oklch, var(--gold) 75%, transparent) 45%, transparent 72%)',
                   boxShadow:
-                    '0 0 22px color-mix(in oklch, var(--gold) 80%, transparent)',
+                    '0 0 32px color-mix(in oklch, var(--gold) 85%, transparent)',
                 }}
               />
-              {/* Dense particle trail dragged behind the moving glow */}
-              {ORB_TRAIL.map((pt, p) => (
-                <span
-                  key={p}
-                  className={cn(
-                    'absolute left-1/2 top-1/2 rounded-full',
-                    pt.tall ? 'animate-particle-tall' : 'animate-particle',
-                  )}
-                  style={{
-                    height: `${pt.size}px`,
-                    width: `${pt.size}px`,
-                    marginLeft: `${pt.dx}px`,
-                    background: 'color-mix(in oklch, var(--gold) 30%, white)',
-                    boxShadow:
-                      '0 0 6px color-mix(in oklch, var(--gold) 80%, transparent)',
-                    animationDelay: `${pt.delay}s`,
-                    // @ts-expect-error custom property for horizontal drift
-                    '--drift-x': `${pt.drift}px`,
-                  }}
-                />
-              ))}
             </span>
           </div>
         )}
