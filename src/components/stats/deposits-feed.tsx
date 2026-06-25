@@ -35,7 +35,7 @@ export function DepositsFeed({ deposits }: { deposits: Deposit[] }) {
           Scroll for last 15 · Base
         </span>
       </div>
-      <ul className="feed-scroll flex max-h-[26rem] flex-col gap-2 overflow-y-auto pr-2">
+      <ul className="feed-scroll flex max-h-[19rem] flex-col gap-2 overflow-y-auto pr-2">
         {deposits.map((d, i) => (
           <li
             key={d.id}

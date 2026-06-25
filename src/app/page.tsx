@@ -2,7 +2,6 @@ import { SiteHeader } from "@/components/site-header";
 import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
 import { YieldMechanics } from "@/components/yield-mechanics";
-import { Protocols } from "@/components/protocols";
 import { LiveStats } from "@/components/stats/live-stats";
 import { Impact } from "@/components/impact";
 import { PhpImpact } from "@/components/php-impact";
@@ -23,7 +22,6 @@ export default function Home() {
         <LiveStats />
         <HowItWorks />
         <YieldMechanics />
-        <Protocols />
         <Impact />
         <PhpImpact />
         <Roadmap />

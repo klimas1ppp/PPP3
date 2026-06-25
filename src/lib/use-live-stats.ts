@@ -112,13 +112,14 @@ export function useLiveStats(): LiveStats {
 }
 
 export const IMPACT_ALLOCATION = [
-  { name: 'Farming & livestock', value: 24, fill: 'var(--color-chart-1)' },
-  { name: 'Fishing equipment', value: 16, fill: 'var(--color-chart-2)' },
-  { name: 'Medical bills', value: 14, fill: 'var(--color-chart-3)' },
-  { name: 'Education', value: 13, fill: 'var(--color-chart-4)' },
-  { name: 'Funding startups', value: 12, fill: 'var(--color-teal-soft)' },
-  { name: 'Water systems', value: 9, fill: 'var(--color-chart-5)' },
-  { name: 'Housing & infrastructure', value: 12, fill: 'var(--color-gold-soft)' },
+  { name: 'Farming & livestock', value: 22, fill: 'var(--color-chart-1)' },
+  { name: 'Fishing equipment', value: 15, fill: 'var(--color-chart-2)' },
+  { name: 'Medical bills', value: 13, fill: 'var(--color-chart-3)' },
+  { name: 'Education', value: 12, fill: 'var(--color-chart-4)' },
+  { name: 'Funding startups', value: 11, fill: 'var(--color-teal-soft)' },
+  { name: 'Water systems', value: 8, fill: 'var(--color-chart-5)' },
+  { name: 'Housing & infrastructure', value: 11, fill: 'var(--color-gold-soft)' },
+  { name: 'Natural disaster reserves', value: 8, fill: 'var(--color-teal)' },
 ]
 
 // Weekly TVL history (in thousands of USDC) across the last ~8 months.

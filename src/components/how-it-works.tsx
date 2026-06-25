@@ -1,4 +1,5 @@
 import { Wallet, TrendingUp, HeartHandshake, RefreshCw } from 'lucide-react'
+import { SectionDecor } from './decor/section-decor'
 
 const STEPS = [
   {
@@ -33,11 +34,7 @@ export function HowItWorks() {
           'linear-gradient(180deg, var(--background), var(--section-tint), var(--background))',
       }}
     >
-      <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden="true" />
-      <div
-        className="glow-gold pointer-events-none absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2"
-        aria-hidden="true"
-      />
+      <SectionDecor pattern="grid" variant="mixed" seed={1} network />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-gold">
@@ -48,11 +45,11 @@ export function HowItWorks() {
           </h2>
           <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
             PPP is a <strong className="kw">non-profit organization</strong>.
-            Principal-preserving philanthropy turns idle capital into a
-            renewable engine for good — you never give away your money, only the
+            Park your idle capital and put it to work for good. — you never give away your money, only the
             yield it produces. The result:{' '}
             <strong className="kw text-gold">possible infinite impact</strong>{' '}
-            from capital that stays entirely yours.
+            from capital that stays entirely yours. Every step runs on smart contracts you can inspect —
+            no middlemen, no lock-ups, no touching your principal.
           </p>
         </div>
 

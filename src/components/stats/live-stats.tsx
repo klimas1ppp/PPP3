@@ -89,13 +89,15 @@ export function LiveStats() {
           />
         </div>
 
-        {/* Charts + feed */}
+        {/* Latest deposits + Impact allocation */}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <TvlChart />
+          <DepositsFeed deposits={stats.deposits} />
           <AllocationChart />
         </div>
+
+        {/* TVL growth over time */}
         <div className="mt-6">
-          <DepositsFeed deposits={stats.deposits} />
+          <TvlChart tvlUsd={vaultTvl.isLoading ? undefined : vaultTvl.tvlUsd} />
         </div>
       </div>
     </section>
