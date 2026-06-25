@@ -230,14 +230,13 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
   for (let i = 0; i < MILESTONES.length; i++) {
     const m = MILESTONES[i]
     const nextM = MILESTONES[i + 1]
+    const prevM = MILESTONES[i - 1]
     const isLast = !nextM
-    const lo = m.threshold
-    const hi = nextM ? nextM.threshold : m.threshold
-    const fr = isLast
-      ? tvl >= m.threshold
-        ? 1
-        : 0
-      : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+    // Mirror the segment fill logic: the final segment fills gradually from the
+    // previous milestone up to its own threshold, so the orb tracks it too.
+    const lo = isLast ? (prevM?.threshold ?? 0) : m.threshold
+    const hi = isLast ? m.threshold : nextM.threshold
+    const fr = Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
     if (fr > 0) {
       leadingIndex = i
       leadingFillRatio = fr
@@ -381,19 +380,20 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             // (no next milestone) acts as a "cap" that fills fully once its own
             // threshold (the goal) is reached, so it is never left colorless.
             const nextM = MILESTONES[i + 1]
+            const prevM = MILESTONES[i - 1]
             const isLast = !nextM
-            const lo = m.threshold
-            const hi = nextM ? nextM.threshold : m.threshold
-            const fillRatio = isLast
-              ? reached
-                ? 1
-                : 0
-              : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+            // Non-final segments fill from this milestone toward the next one.
+            // The final segment has no "next", so it fills gradually from the
+            // PREVIOUS milestone up to its own threshold — just like the others,
+            // instead of snapping straight to full once reached.
+            const lo = isLast ? (prevM?.threshold ?? 0) : m.threshold
+            const hi = isLast ? m.threshold : nextM.threshold
+            const fillRatio = Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
             // The final cap segment uses gold; non-final segments take the
             // color of the milestone they lead into.
             const segColor = isLast ? 'oklch(0.79 0.13 88)' : (nextM?.color ?? 'oklch(0.79 0.13 88)')
-            const started = isLast ? reached : tvl > lo
-            const segReached = isLast ? reached : tvl >= hi
+            const started = tvl > lo
+            const segReached = tvl >= hi
 
             return (
             <button
