@@ -189,6 +189,29 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
   const finalGoal = MILESTONES[MILESTONES.length - 1].threshold
   const overallPct = Math.min(100, (tvl / finalGoal) * 100)
 
+  // The bar columns are equal-width but milestone thresholds are non-linear, so
+  // the orb is positioned at the right edge of whichever segment is currently
+  // filling (the "leading" column). This guarantees it always sits exactly at
+  // the visual progress edge regardless of threshold spacing.
+  let leadingIndex = -1
+  let leadingFillRatio = 0
+  for (let i = 0; i < MILESTONES.length; i++) {
+    const m = MILESTONES[i]
+    const nextM = MILESTONES[i + 1]
+    const isLast = !nextM
+    const lo = m.threshold
+    const hi = nextM ? nextM.threshold : m.threshold
+    const fr = isLast
+      ? tvl >= m.threshold
+        ? 1
+        : 0
+      : Math.max(0, Math.min(1, (tvl - lo) / (hi - lo)))
+    if (fr > 0) {
+      leadingIndex = i
+      leadingFillRatio = fr
+    }
+  }
+
   return (
     <div className="mt-14 rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm sm:p-8">
       {/* Header: current TVL */}
@@ -380,6 +403,27 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                     )}
                   </div>
                 )}
+
+                {/* Single glow orb pinned to the leading edge of the filled
+                    portion of the bar. It rests exactly at the current TVL
+                    position, pulsing and glowing — it never disappears. */}
+                {i === leadingIndex && (
+                  <span
+                    className="pointer-events-none absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-1000 ease-out"
+                    style={{ left: `${leadingFillRatio * 100}%` }}
+                    aria-hidden="true"
+                  >
+                    <span
+                      className="animate-orb-pulse block h-10 w-10 rounded-full"
+                      style={{
+                        background:
+                          'radial-gradient(circle, color-mix(in oklch, white 90%, transparent) 0%, color-mix(in oklch, var(--gold) 75%, transparent) 45%, transparent 72%)',
+                        boxShadow:
+                          '0 0 32px color-mix(in oklch, var(--gold) 85%, transparent)',
+                      }}
+                    />
+                  </span>
+                )}
               </div>
 
               {/* Icon centered under the segment — unified accent color */}
@@ -433,30 +477,6 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
           )
         })}
         </div>
-
-        {/* Single glow orb pinned to the leading edge of the filled portion.
-            As progress grows it travels along once and then rests at the
-            current TVL position, pulsing and glowing — it never disappears. */}
-        {overallPct > 0 && (
-          <div
-            className="pointer-events-none absolute left-0 top-0 h-[1.875rem]"
-            style={{ width: `${overallPct}%` }}
-            aria-hidden="true"
-          >
-            <span className="absolute left-full top-1/2 -translate-x-1/2 -translate-y-1/2">
-              {/* Core glow orb */}
-              <span
-                className="animate-orb-pulse block h-10 w-10 rounded-full"
-                style={{
-                  background:
-                    'radial-gradient(circle, color-mix(in oklch, white 90%, transparent) 0%, color-mix(in oklch, var(--gold) 75%, transparent) 45%, transparent 72%)',
-                  boxShadow:
-                    '0 0 32px color-mix(in oklch, var(--gold) 85%, transparent)',
-                }}
-              />
-            </span>
-          </div>
-        )}
       </div>
     </div>
   )
