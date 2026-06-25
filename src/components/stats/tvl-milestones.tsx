@@ -120,7 +120,7 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
 
   useEffect(() => {
     if (!simRunning) return
-    const duration = 9000 // ms for full sweep
+    const duration = 14400 // ms for full sweep (slowed 60% from 9000ms)
     const start = performance.now()
     const startValue = simValue ?? 0
     const remaining = 1 - startValue / finalGoalValue
@@ -261,7 +261,7 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
 
       {/* Segmented milestone progress bar with icons centered beneath each segment */}
       <div className="relative mt-8">
-        <div className="flex w-full items-stretch gap-1.5">
+        <div className="flex w-full items-stretch gap-0.5">
           {MILESTONES.map((m, i) => {
             const reached = tvl >= m.threshold
             const isActive = i === activeIndex
@@ -314,31 +314,35 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
                 </div>
 
                 {/* Always-present per-section particles: rise from the bottom of
-                    the bar and float up above it once the section is active. */}
+                    the bar and float up above it. They are confined to the
+                    FILLED portion of the segment, so a half-filled section only
+                    emits particles from its left half. */}
                 {started && (
                   <div
                     className="pointer-events-none absolute inset-0"
                     aria-hidden="true"
                   >
-                    {PARTICLES.map((pt, p) => (
-                      <span
-                        key={p}
-                        className={cn(
-                          'absolute bottom-0 rounded-full',
-                          pt.tall ? 'animate-particle-tall' : 'animate-particle',
-                        )}
-                        style={{
-                          left: `${pt.left}%`,
-                          height: `${pt.size}px`,
-                          width: `${pt.size}px`,
-                          background: `color-mix(in oklch, ${segColor} 35%, white)`,
-                          boxShadow: `0 0 6px color-mix(in oklch, ${segColor} 80%, transparent)`,
-                          animationDelay: `${pt.delay}s`,
-                          // @ts-expect-error custom property for horizontal drift
-                          '--drift-x': `${pt.drift}px`,
-                        }}
-                      />
-                    ))}
+                    {PARTICLES.filter((pt) => pt.left / 100 <= fillRatio).map(
+                      (pt, p) => (
+                        <span
+                          key={p}
+                          className={cn(
+                            'absolute bottom-0 rounded-full',
+                            pt.tall ? 'animate-particle-tall' : 'animate-particle',
+                          )}
+                          style={{
+                            left: `${pt.left}%`,
+                            height: `${pt.size}px`,
+                            width: `${pt.size}px`,
+                            background: `color-mix(in oklch, ${segColor} 35%, white)`,
+                            boxShadow: `0 0 6px color-mix(in oklch, ${segColor} 80%, transparent)`,
+                            animationDelay: `${pt.delay}s`,
+                            // @ts-expect-error custom property for horizontal drift
+                            '--drift-x': `${pt.drift}px`,
+                          }}
+                        />
+                      ),
+                    )}
                   </div>
                 )}
               </div>
@@ -406,7 +410,7 @@ export function TvlMilestones({ tvlUsd, isLoading }: Props) {
             <span className="animate-glow-travel absolute top-1/2 -translate-x-1/2 -translate-y-1/2">
               {/* Core glow orb */}
               <span
-                className="block h-10 w-10 rounded-full"
+                className="animate-orb-pulse block h-10 w-10 rounded-full"
                 style={{
                   background:
                     'radial-gradient(circle, color-mix(in oklch, white 90%, transparent) 0%, color-mix(in oklch, var(--gold) 75%, transparent) 45%, transparent 72%)',
