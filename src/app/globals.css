@@ -334,6 +334,33 @@
   animation: glow-travel 7s ease-in-out infinite;
 }
 
+/* Dynamic pulsing of the traveling glow orb (scale + brightness throb) */
+@keyframes orb-pulse {
+  0% {
+    transform: scale(0.78);
+    filter: brightness(0.9);
+    opacity: 0.85;
+  }
+  35% {
+    transform: scale(1.18);
+    filter: brightness(1.45);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.92);
+    filter: brightness(1.05);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(0.78);
+    filter: brightness(0.9);
+    opacity: 0.85;
+  }
+}
+.animate-orb-pulse {
+  animation: orb-pulse 0.9s ease-in-out infinite;
+}
+
 /* Sliding sheen across a filled progress segment */
 @keyframes seg-sheen {
   0% {
@@ -440,6 +467,7 @@
   .animate-particle,
   .animate-particle-tall,
   .animate-glow-travel,
+  .animate-orb-pulse,
   .animate-sheen,
   .gradient-border {
     animation: none;
