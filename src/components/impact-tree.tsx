@@ -19,9 +19,10 @@ const VIEW_H = 920
 // Trunk anchor points (top = where branches sprout, base = where roots gather).
 const TRUNK_TOP = { x: 500, y: 410 }
 const TRUNK_BASE = { x: 500, y: 558 }
-// A large planet only partly in view: its upper curvature rises up to overlap
-// the base of the tree's roots so the two arcs meet. Center is far below.
-const GLOBE = { x: 500, y: 1180, r: 560 }
+// A large planet only partly in view: its upper curvature rises up so it meets
+// (and slightly overlaps) the spreading base of the tree's roots. Center is
+// far below the canvas, so only the top cap shows.
+const GLOBE = { x: 500, y: 1080, r: 560 }
 
 type Cause = {
   icon: LucideIcon
@@ -100,15 +101,18 @@ const CAUSES: Cause[] = [
   },
 ]
 
-// Points on the visible upper arc of the planet where capital originates
-// ("across the world"). The arc top sits at y = GLOBE.y - GLOBE.r = 620.
+// Points scattered across the VISIBLE land of the planet where capital
+// originates ("across the world") — not lined up along the top arc, but spread
+// over the surface so flows emerge from varied places. All lie inside the
+// sphere (center 500,1080 r 560; visible cap top at y ≈ 520).
 const GLOBE_SOURCES = [
-  { x: 250, y: 672 },
-  { x: 370, y: 640 },
-  { x: 500, y: 624 },
-  { x: 630, y: 640 },
-  { x: 750, y: 672 },
-  { x: 440, y: 630 },
+  { x: 260, y: 690 },
+  { x: 390, y: 648 },
+  { x: 520, y: 706 },
+  { x: 650, y: 656 },
+  { x: 760, y: 700 },
+  { x: 330, y: 742 },
+  { x: 700, y: 744 },
 ]
 
 function branchPath(p: { x: number; y: number }) {
