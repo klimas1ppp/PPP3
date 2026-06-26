@@ -101,18 +101,21 @@ const CAUSES: Cause[] = [
   },
 ]
 
-// Points scattered across the VISIBLE land of the planet where capital
-// originates ("across the world") — not lined up along the top arc, but spread
-// over the surface so flows emerge from varied places. All lie inside the
-// sphere (center 500,1010 r 560; visible cap top at y ≈ 450).
+// Points scattered randomly across the VISIBLE surface of the planet where
+// capital originates ("from across the world"). They are deliberately spread
+// (not lined up) so particle flows emerge from varied places. All lie inside
+// the sphere (center 500,1010 r 560; visible cap top at y ≈ 450).
 const GLOBE_SOURCES = [
-  { x: 260, y: 620 },
-  { x: 390, y: 578 },
-  { x: 520, y: 636 },
-  { x: 650, y: 586 },
-  { x: 760, y: 630 },
-  { x: 330, y: 672 },
-  { x: 700, y: 674 },
+  { x: 214, y: 642 },
+  { x: 318, y: 560 },
+  { x: 402, y: 624 },
+  { x: 486, y: 540 },
+  { x: 552, y: 612 },
+  { x: 628, y: 558 },
+  { x: 712, y: 622 },
+  { x: 786, y: 556 },
+  { x: 360, y: 700 },
+  { x: 648, y: 706 },
 ]
 
 function branchPath(p: { x: number; y: number }) {
@@ -216,8 +219,12 @@ export function ImpactTree() {
               <clipPath id="tree-globe-clip">
                 <circle cx={GLOBE.x} cy={GLOBE.y} r={GLOBE.r} />
               </clipPath>
-              {/* fade the planet image out toward the bottom so it melts into
-                  the background instead of ending in a hard edge */}
+              {/* heavier blur used to soften the lower part of the planet */}
+              <filter id="tree-globeblur" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="9" />
+              </filter>
+              {/* SHARP layer: visible across the top cap, fades out before the
+                  lower band so it hands off to the blurred layer */}
               <linearGradient
                 id="tree-earth-fade"
                 gradientUnits="userSpaceOnUse"
@@ -227,8 +234,8 @@ export function ImpactTree() {
                 y2={GLOBE.y}
               >
                 <stop offset="0%" stopColor="#fff" stopOpacity="1" />
-                <stop offset="55%" stopColor="#fff" stopOpacity="1" />
-                <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+                <stop offset="34%" stopColor="#fff" stopOpacity="1" />
+                <stop offset="60%" stopColor="#fff" stopOpacity="0" />
               </linearGradient>
               <mask id="tree-earth-mask">
                 <rect
@@ -239,17 +246,56 @@ export function ImpactTree() {
                   fill="url(#tree-earth-fade)"
                 />
               </mask>
+              {/* BLURRED layer: only the lower band, fading away at the very
+                  bottom so the planet melts into the end of the section */}
+              <linearGradient
+                id="tree-earth-bottom-fade"
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1={GLOBE.y - GLOBE.r}
+                x2="0"
+                y2={GLOBE.y}
+              >
+                <stop offset="30%" stopColor="#fff" stopOpacity="0" />
+                <stop offset="50%" stopColor="#fff" stopOpacity="1" />
+                <stop offset="68%" stopColor="#fff" stopOpacity="0.45" />
+                <stop offset="80%" stopColor="#fff" stopOpacity="0" />
+              </linearGradient>
+              <mask id="tree-earth-bottom-mask">
+                <rect
+                  x={GLOBE.x - GLOBE.r}
+                  y={GLOBE.y - GLOBE.r}
+                  width={GLOBE.r * 2}
+                  height={GLOBE.r * 2}
+                  fill="url(#tree-earth-bottom-fade)"
+                />
+              </mask>
+              {/* gradient that blends the globe's base into the page bg */}
+              <linearGradient
+                id="tree-bottom-blend"
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1={GLOBE.y - GLOBE.r + 300}
+                x2="0"
+                y2={VIEW_H}
+              >
+                <stop offset="0%" stopColor="var(--background)" stopOpacity="0" />
+                <stop offset="70%" stopColor="var(--background)" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="var(--background)" stopOpacity="1" />
+              </linearGradient>
             </defs>
 
             {/* soft halo behind the logo */}
             <circle cx={500} cy={462} r={170} fill="url(#tree-halo)" />
 
             {/* ---- GLOBE at the roots (large planet, only partly in view) ---- */}
-            <g>
-              {/* sphere body */}
+            {/* `screen` blend drops the image's black/space pixels into the
+                page background so there is no dark disc — only the lit planet. */}
+            <g style={{ mixBlendMode: 'screen' }}>
+              {/* soft glow behind the planet */}
               <circle cx={GLOBE.x} cy={GLOBE.y} r={GLOBE.r} fill="url(#tree-globe)" />
-              {/* realistic Earth, clipped to the sphere and faded at the base */}
-              <g clipPath="url(#tree-globe-clip)" mask="url(#tree-earth-mask)">
+              <g clipPath="url(#tree-globe-clip)">
+                {/* sharp planet across the top cap */}
                 <image
                   href="/images/globe-earth.png"
                   x={GLOBE.x - GLOBE.r}
@@ -257,49 +303,43 @@ export function ImpactTree() {
                   width={GLOBE.r * 2}
                   height={GLOBE.r * 2}
                   preserveAspectRatio="xMidYMid slice"
-                  opacity={0.95}
+                  mask="url(#tree-earth-mask)"
+                />
+                {/* blurred lower band that dissolves into the section end */}
+                <image
+                  href="/images/globe-earth.png"
+                  x={GLOBE.x - GLOBE.r}
+                  y={GLOBE.y - GLOBE.r}
+                  width={GLOBE.r * 2}
+                  height={GLOBE.r * 2}
+                  preserveAspectRatio="xMidYMid slice"
+                  filter="url(#tree-globeblur)"
+                  mask="url(#tree-earth-bottom-mask)"
                 />
               </g>
-              {/* soft gold rim along the visible curvature */}
-              <circle
-                cx={GLOBE.x}
-                cy={GLOBE.y}
-                r={GLOBE.r}
-                fill="none"
-                stroke="var(--gold)"
-                strokeWidth={2}
-                opacity={0.35}
-              />
-              {/* origin "locations" pulsing on the globe */}
-              {GLOBE_SOURCES.map((g, i) => (
-                <circle
-                  key={`src-${i}`}
-                  cx={g.x}
-                  cy={g.y}
-                  r={3}
-                  fill="url(#tree-gold)"
-                  filter="url(#tree-pglow)"
-                >
-                  <animate
-                    attributeName="r"
-                    values="2;4.5;2"
-                    dur="2.6s"
-                    begin={`${i * 0.4}s`}
-                    repeatCount="indefinite"
-                  />
-                </circle>
-              ))}
             </g>
 
-            {/* root particles: world -> trunk */}
+            {/* fade the globe's base into the page background */}
+            <rect
+              x={0}
+              y={GLOBE.y - GLOBE.r + 300}
+              width={VIEW_W}
+              height={VIEW_H - (GLOBE.y - GLOBE.r + 300)}
+              fill="url(#tree-bottom-blend)"
+            />
+
+            {/* root particles: world -> trunk. Begin offsets are pseudo-random
+                so particles emerge from scattered places at scattered times
+                (no stationary origin markers). */}
             {GLOBE_SOURCES.map((g, i) => {
               const d = rootPath(g)
-              return [0, 1.6, 3.2].map((begin, j) => (
+              const phase = (i * 1.37) % 4.6
+              return [0, 2.3].map((begin, j) => (
                 <Particle
                   key={`rootp-${i}-${j}`}
                   d={d}
                   dur={4.6}
-                  begin={begin + i * 0.25}
+                  begin={(begin + phase) % 4.6}
                 />
               ))
             })}
