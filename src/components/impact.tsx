@@ -148,29 +148,31 @@ export function Impact() {
           </div>
         </div>
 
-        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {FOCUS.map((item, i) => {
             const teal = i % 2 === 1
             return (
             <div
               key={item.title}
-              className={`group rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 ${
+              className={`group flex items-start gap-3 rounded-xl border border-border/60 bg-card/60 p-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 ${
                 teal ? 'hover:border-teal/50' : 'hover:border-gold/50'
               }`}
             >
               <span
-                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 ${
                   teal ? 'bg-teal/15 text-teal' : 'bg-primary/15 text-gold'
                 }`}
               >
-                <item.icon className="h-5 w-5" aria-hidden="true" />
+                <item.icon className="h-4 w-4" aria-hidden="true" />
               </span>
-              <h3 className="mt-4 font-heading text-lg font-semibold">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {item.body}
-              </p>
+              <div>
+                <h3 className="font-heading text-sm font-semibold">
+                  {item.title}
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {item.body}
+                </p>
+              </div>
             </div>
             )
           })}
