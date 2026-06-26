@@ -19,7 +19,9 @@ const VIEW_H = 920
 // Trunk anchor points (top = where branches sprout, base = where roots gather).
 const TRUNK_TOP = { x: 500, y: 410 }
 const TRUNK_BASE = { x: 500, y: 558 }
-const GLOBE = { x: 500, y: 800, r: 112 }
+// A large planet only partly in view: its upper curvature rises up to overlap
+// the base of the tree's roots so the two arcs meet. Center is far below.
+const GLOBE = { x: 500, y: 1180, r: 560 }
 
 type Cause = {
   icon: LucideIcon
@@ -60,16 +62,16 @@ const CAUSES: Cause[] = [
     icon: GraduationCap,
     title: 'Education',
     body: 'Tuition, supplies, and scholarships that open doors for the next generation.',
-    x: 478,
-    y: 138,
+    x: 430,
+    y: 128,
     tone: 'teal',
   },
   {
     icon: Droplets,
     title: 'Water systems',
     body: 'Clean water infrastructure for healthier, more resilient communities.',
-    x: 522,
-    y: 138,
+    x: 570,
+    y: 128,
     tone: 'gold',
   },
   {
@@ -98,14 +100,15 @@ const CAUSES: Cause[] = [
   },
 ]
 
-// Points around the globe where capital originates ("across the world").
+// Points on the visible upper arc of the planet where capital originates
+// ("across the world"). The arc top sits at y = GLOBE.y - GLOBE.r = 620.
 const GLOBE_SOURCES = [
-  { x: 432, y: 706 },
-  { x: 500, y: 692 },
-  { x: 568, y: 706 },
-  { x: 452, y: 744 },
-  { x: 548, y: 744 },
-  { x: 500, y: 752 },
+  { x: 250, y: 672 },
+  { x: 370, y: 640 },
+  { x: 500, y: 624 },
+  { x: 630, y: 640 },
+  { x: 750, y: 672 },
+  { x: 440, y: 630 },
 ]
 
 function branchPath(p: { x: number; y: number }) {
@@ -185,11 +188,14 @@ export function ImpactTree() {
                 <stop offset="0%" stopColor="var(--gold-soft)" />
                 <stop offset="100%" stopColor="var(--gold)" />
               </linearGradient>
-              <radialGradient id="tree-globe" cx="50%" cy="42%" r="65%">
-                <stop offset="0%" stopColor="var(--teal)" stopOpacity="0.45" />
-                <stop offset="70%" stopColor="var(--teal)" stopOpacity="0.12" />
-                <stop offset="100%" stopColor="var(--background)" stopOpacity="0" />
-              </radialGradient>
+              {/* Top-bright gradient for the partial planet: the visible upper
+                  arc glows teal and fades into the background lower down. */}
+              <linearGradient id="tree-globe" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--teal)" stopOpacity="0.5" />
+                <stop offset="12%" stopColor="var(--teal)" stopOpacity="0.28" />
+                <stop offset="30%" stopColor="var(--teal)" stopOpacity="0.08" />
+                <stop offset="55%" stopColor="var(--background)" stopOpacity="0" />
+              </linearGradient>
               <radialGradient id="tree-halo" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.22" />
                 <stop offset="100%" stopColor="var(--gold)" stopOpacity="0" />
@@ -212,69 +218,31 @@ export function ImpactTree() {
             {/* soft halo behind the logo */}
             <circle cx={500} cy={462} r={170} fill="url(#tree-halo)" />
 
-            {/* ---- ROOTS: globe -> trunk base ---- */}
-            <g stroke="url(#tree-gold)" fill="none" strokeLinecap="round">
-              {GLOBE_SOURCES.map((g, i) => (
-                <path
-                  key={`root-${i}`}
-                  d={rootPath(g)}
-                  strokeWidth={2}
-                  opacity={0.4}
-                />
-              ))}
-            </g>
-
-            {/* ---- GLOBE at the roots ---- */}
+            {/* ---- GLOBE at the roots (large planet, only partly in view) ---- */}
             <g>
-              <circle
-                cx={GLOBE.x}
-                cy={GLOBE.y}
-                r={GLOBE.r + 6}
-                fill="url(#tree-halo)"
-              />
+              {/* sphere body */}
               <circle cx={GLOBE.x} cy={GLOBE.y} r={GLOBE.r} fill="url(#tree-globe)" />
-              <g clipPath="url(#tree-globe-clip)" stroke="var(--gold)" fill="none">
-                {/* meridians */}
-                {[36, 72].map((rx) => (
-                  <ellipse
-                    key={`m-${rx}`}
-                    cx={GLOBE.x}
-                    cy={GLOBE.y}
-                    rx={rx}
-                    ry={GLOBE.r}
-                    strokeWidth={1}
-                    opacity={0.25}
-                  />
-                ))}
-                <line
-                  x1={GLOBE.x}
-                  y1={GLOBE.y - GLOBE.r}
-                  x2={GLOBE.x}
-                  y2={GLOBE.y + GLOBE.r}
-                  strokeWidth={1}
-                  opacity={0.25}
+              {/* continents, clipped to the sphere */}
+              <g clipPath="url(#tree-globe-clip)">
+                <image
+                  href="/images/globe-continents.png"
+                  x={GLOBE.x - GLOBE.r}
+                  y={GLOBE.y - GLOBE.r}
+                  width={GLOBE.r * 2}
+                  height={GLOBE.r * 2}
+                  preserveAspectRatio="xMidYMid slice"
+                  opacity={0.5}
                 />
-                {/* parallels */}
-                {[-66, -33, 0, 33, 66].map((dy) => (
-                  <line
-                    key={`p-${dy}`}
-                    x1={GLOBE.x - GLOBE.r}
-                    y1={GLOBE.y + dy}
-                    x2={GLOBE.x + GLOBE.r}
-                    y2={GLOBE.y + dy}
-                    strokeWidth={1}
-                    opacity={0.2}
-                  />
-                ))}
               </g>
+              {/* crisp rim along the visible curvature */}
               <circle
                 cx={GLOBE.x}
                 cy={GLOBE.y}
                 r={GLOBE.r}
                 fill="none"
                 stroke="var(--gold)"
-                strokeWidth={1.6}
-                opacity={0.6}
+                strokeWidth={2}
+                opacity={0.5}
               />
               {/* origin "locations" pulsing on the globe */}
               {GLOBE_SOURCES.map((g, i) => (
@@ -310,19 +278,8 @@ export function ImpactTree() {
               ))
             })}
 
-            {/* ---- BRANCHES: trunk -> causes ---- */}
-            <g stroke="url(#tree-gold)" fill="none" strokeLinecap="round">
-              {CAUSES.map((c, i) => (
-                <path
-                  key={`branch-${i}`}
-                  d={branchPath(c)}
-                  strokeWidth={2.2}
-                  opacity={0.42}
-                />
-              ))}
-            </g>
-
-            {/* branch particles: trunk -> causes */}
+            {/* branch particles: trunk -> causes (lines removed; only the
+                flowing particles convey the impact path) */}
             {CAUSES.map((c, i) => {
               const d = branchPath(c)
               return [0, 1.5, 3].map((begin, j) => (
