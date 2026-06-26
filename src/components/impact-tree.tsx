@@ -22,7 +22,7 @@ const TRUNK_BASE = { x: 500, y: 558 }
 // A large planet only partly in view: its upper curvature rises up so it meets
 // (and slightly overlaps) the spreading base of the tree's roots. Center is
 // far below the canvas, so only the top cap shows.
-const GLOBE = { x: 500, y: 1080, r: 560 }
+const GLOBE = { x: 500, y: 1010, r: 560 }
 
 type Cause = {
   icon: LucideIcon
@@ -104,15 +104,15 @@ const CAUSES: Cause[] = [
 // Points scattered across the VISIBLE land of the planet where capital
 // originates ("across the world") — not lined up along the top arc, but spread
 // over the surface so flows emerge from varied places. All lie inside the
-// sphere (center 500,1080 r 560; visible cap top at y ≈ 520).
+// sphere (center 500,1010 r 560; visible cap top at y ≈ 450).
 const GLOBE_SOURCES = [
-  { x: 260, y: 690 },
-  { x: 390, y: 648 },
-  { x: 520, y: 706 },
-  { x: 650, y: 656 },
-  { x: 760, y: 700 },
-  { x: 330, y: 742 },
-  { x: 700, y: 744 },
+  { x: 260, y: 620 },
+  { x: 390, y: 578 },
+  { x: 520, y: 636 },
+  { x: 650, y: 586 },
+  { x: 760, y: 630 },
+  { x: 330, y: 672 },
+  { x: 700, y: 674 },
 ]
 
 function branchPath(p: { x: number; y: number }) {
@@ -192,13 +192,12 @@ export function ImpactTree() {
                 <stop offset="0%" stopColor="var(--gold-soft)" />
                 <stop offset="100%" stopColor="var(--gold)" />
               </linearGradient>
-              {/* Top-bright gradient for the partial planet: the visible upper
-                  arc glows teal and fades into the background lower down. */}
+              {/* Soft base glow behind the realistic Earth: a faint tint near
+                  the visible arc that fades into the background lower down. */}
               <linearGradient id="tree-globe" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--teal)" stopOpacity="0.5" />
-                <stop offset="12%" stopColor="var(--teal)" stopOpacity="0.28" />
-                <stop offset="30%" stopColor="var(--teal)" stopOpacity="0.08" />
-                <stop offset="55%" stopColor="var(--background)" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--teal)" stopOpacity="0.18" />
+                <stop offset="20%" stopColor="var(--teal)" stopOpacity="0.06" />
+                <stop offset="45%" stopColor="var(--background)" stopOpacity="0" />
               </linearGradient>
               <radialGradient id="tree-halo" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.22" />
@@ -217,6 +216,29 @@ export function ImpactTree() {
               <clipPath id="tree-globe-clip">
                 <circle cx={GLOBE.x} cy={GLOBE.y} r={GLOBE.r} />
               </clipPath>
+              {/* fade the planet image out toward the bottom so it melts into
+                  the background instead of ending in a hard edge */}
+              <linearGradient
+                id="tree-earth-fade"
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1={GLOBE.y - GLOBE.r}
+                x2="0"
+                y2={GLOBE.y}
+              >
+                <stop offset="0%" stopColor="#fff" stopOpacity="1" />
+                <stop offset="55%" stopColor="#fff" stopOpacity="1" />
+                <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+              </linearGradient>
+              <mask id="tree-earth-mask">
+                <rect
+                  x={GLOBE.x - GLOBE.r}
+                  y={GLOBE.y - GLOBE.r}
+                  width={GLOBE.r * 2}
+                  height={GLOBE.r * 2}
+                  fill="url(#tree-earth-fade)"
+                />
+              </mask>
             </defs>
 
             {/* soft halo behind the logo */}
@@ -226,19 +248,19 @@ export function ImpactTree() {
             <g>
               {/* sphere body */}
               <circle cx={GLOBE.x} cy={GLOBE.y} r={GLOBE.r} fill="url(#tree-globe)" />
-              {/* continents, clipped to the sphere */}
-              <g clipPath="url(#tree-globe-clip)">
+              {/* realistic Earth, clipped to the sphere and faded at the base */}
+              <g clipPath="url(#tree-globe-clip)" mask="url(#tree-earth-mask)">
                 <image
-                  href="/images/globe-continents.png"
+                  href="/images/globe-earth.png"
                   x={GLOBE.x - GLOBE.r}
                   y={GLOBE.y - GLOBE.r}
                   width={GLOBE.r * 2}
                   height={GLOBE.r * 2}
                   preserveAspectRatio="xMidYMid slice"
-                  opacity={0.5}
+                  opacity={0.95}
                 />
               </g>
-              {/* crisp rim along the visible curvature */}
+              {/* soft gold rim along the visible curvature */}
               <circle
                 cx={GLOBE.x}
                 cy={GLOBE.y}
@@ -246,7 +268,7 @@ export function ImpactTree() {
                 fill="none"
                 stroke="var(--gold)"
                 strokeWidth={2}
-                opacity={0.5}
+                opacity={0.35}
               />
               {/* origin "locations" pulsing on the globe */}
               {GLOBE_SOURCES.map((g, i) => (
