@@ -1,7 +1,59 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
-import { ImpactTree } from './impact-tree'
+import {
+  Sprout,
+  Fish,
+  Stethoscope,
+  GraduationCap,
+  Droplets,
+  Home,
+  Rocket,
+  ShieldCheck,
+  ArrowRight,
+} from 'lucide-react'
+
+const FOCUS = [
+  {
+    icon: Sprout,
+    title: 'Farming & livestock',
+    body: 'Seeds, tools, and animals so families can grow food and income year after year.',
+  },
+  {
+    icon: Fish,
+    title: 'Fishing equipment',
+    body: 'Boats, nets, and gear that turn the sea into a renewable livelihood.',
+  },
+  {
+    icon: Stethoscope,
+    title: 'Medical bills',
+    body: 'Covering urgent care and treatments that families cannot shoulder alone.',
+  },
+  {
+    icon: GraduationCap,
+    title: 'Education',
+    body: 'Tuition, supplies, and scholarships that open doors for the next generation.',
+  },
+  {
+    icon: Droplets,
+    title: 'Water systems',
+    body: 'Clean water infrastructure for healthier, more resilient communities.',
+  },
+  {
+    icon: Home,
+    title: 'Housing & infrastructure',
+    body: 'Repairs and community structures that rebuild after storms and hardship.',
+  },
+  {
+    icon: Rocket,
+    title: 'Funding startups',
+    body: 'Seed capital and mentorship for small local businesses that create jobs and keep income in the community.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Natural disaster reserves',
+    body: 'A dedicated reserve for rapid relief — food, shelter, and emergency aid when typhoons and disasters strike.',
+  },
+]
 
 export function Impact() {
   return (
@@ -96,7 +148,35 @@ export function Impact() {
           </div>
         </div>
 
-        <ImpactTree />
+        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {FOCUS.map((item, i) => {
+            const teal = i % 2 === 1
+            return (
+            <div
+              key={item.title}
+              className={`group flex items-start gap-3 rounded-xl border border-border/60 bg-card/60 p-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 ${
+                teal ? 'hover:border-teal/50' : 'hover:border-gold/50'
+              }`}
+            >
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 ${
+                  teal ? 'bg-teal/15 text-teal' : 'bg-primary/15 text-gold'
+                }`}
+              >
+                <item.icon className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <div>
+                <h3 className="font-heading text-sm font-semibold">
+                  {item.title}
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {item.body}
+                </p>
+              </div>
+            </div>
+            )
+          })}
+        </div>
       </div>
     </section>
   )
