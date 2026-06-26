@@ -1,4 +1,11 @@
-import { Wallet, TrendingUp, HeartHandshake, RefreshCw } from 'lucide-react'
+import {
+  Wallet,
+  TrendingUp,
+  HeartHandshake,
+  RefreshCw,
+  Layers,
+  ArrowRight,
+} from 'lucide-react'
 import { SectionDecor } from './decor/section-decor'
 
 const STEPS = [
@@ -21,6 +28,37 @@ const STEPS = [
     icon: RefreshCw,
     title: 'Withdraw anytime',
     body: 'No lock-ups. Redeem your full principal whenever you choose, instantly.',
+  },
+]
+
+const FLOW = [
+  {
+    icon: Wallet,
+    label: 'You deposit',
+    code: 'deposit(USDC)',
+    desc: 'USDC moves into the non-custodial vault on Base. You hold the keys.',
+    tone: 'gold' as const,
+  },
+  {
+    icon: Layers,
+    label: 'Auto-allocated',
+    code: 'supply() → Aave / Morpho',
+    desc: 'The vault routes principal into audited, blue-chip lending markets.',
+    tone: 'teal' as const,
+  },
+  {
+    icon: TrendingUp,
+    label: 'Yield accrues',
+    code: 'accrue(interest)',
+    desc: 'Interest streams in real time, on-chain and fully verifiable.',
+    tone: 'gold' as const,
+  },
+  {
+    icon: HeartHandshake,
+    label: '100% to impact',
+    code: 'harvest() → Philippines',
+    desc: 'Only the yield is donated. Your principal stays yours, always.',
+    tone: 'teal' as const,
   },
 ]
 
@@ -76,6 +114,38 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+
+        <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {FLOW.map((step, i) => (
+            <div key={step.label} className="relative">
+              <div className="group h-full rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-gold/50">
+                <span
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${
+                    step.tone === 'gold'
+                      ? 'bg-primary/15 text-gold'
+                      : 'bg-teal/15 text-teal'
+                  }`}
+                >
+                  <step.icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h3 className="mt-4 font-heading text-lg font-semibold">
+                  {step.label}
+                </h3>
+                <code className="mt-1 block font-mono text-xs text-muted-foreground/80">
+                  {step.code}
+                </code>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {step.desc}
+                </p>
+              </div>
+              {i < FLOW.length - 1 && (
+                <span className="absolute -right-3 top-1/2 z-10 hidden -translate-y-1/2 text-gold/60 lg:block">
+                  <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

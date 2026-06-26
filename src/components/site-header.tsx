@@ -10,10 +10,8 @@ import { WalletButton } from "@/components/wallet-button";
 
 const NAV = [
   { label: "How it works", href: "/#how" },
-  { label: "Yield", href: "/#yield" },
   { label: "Live stats", href: "/#stats" },
   { label: "Impact", href: "/#impact" },
-  { label: "Roadmap", href: "/#roadmap" },
   { label: "Reports", href: "/reports", underline: true },
   { label: "Contact", href: "/contact" },
 ];
