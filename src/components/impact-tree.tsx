@@ -22,7 +22,7 @@ const TRUNK_BASE = { x: 500, y: 558 }
 // A large planet only partly in view: its upper curvature rises up so it meets
 // (and slightly overlaps) the spreading base of the tree's roots. Center is
 // far below the canvas, so only the top cap shows.
-const GLOBE = { x: 500, y: 1010, r: 560 }
+const GLOBE = { x: 500, y: 950, r: 560 }
 
 type Cause = {
   icon: LucideIcon
@@ -104,18 +104,18 @@ const CAUSES: Cause[] = [
 // Points scattered randomly across the VISIBLE surface of the planet where
 // capital originates ("from across the world"). They are deliberately spread
 // (not lined up) so particle flows emerge from varied places. All lie inside
-// the sphere (center 500,1010 r 560; visible cap top at y ≈ 450).
+// the sphere (center 500,950 r 560; visible cap top at y ≈ 390).
 const GLOBE_SOURCES = [
-  { x: 214, y: 642 },
-  { x: 318, y: 560 },
-  { x: 402, y: 624 },
-  { x: 486, y: 540 },
-  { x: 552, y: 612 },
-  { x: 628, y: 558 },
-  { x: 712, y: 622 },
-  { x: 786, y: 556 },
-  { x: 360, y: 700 },
-  { x: 648, y: 706 },
+  { x: 214, y: 582 },
+  { x: 318, y: 500 },
+  { x: 402, y: 564 },
+  { x: 486, y: 480 },
+  { x: 552, y: 552 },
+  { x: 628, y: 498 },
+  { x: 712, y: 562 },
+  { x: 786, y: 496 },
+  { x: 360, y: 640 },
+  { x: 648, y: 646 },
 ]
 
 function branchPath(p: { x: number; y: number }) {
@@ -219,12 +219,8 @@ export function ImpactTree() {
               <clipPath id="tree-globe-clip">
                 <circle cx={GLOBE.x} cy={GLOBE.y} r={GLOBE.r} />
               </clipPath>
-              {/* heavier blur used to soften the lower part of the planet */}
-              <filter id="tree-globeblur" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="9" />
-              </filter>
-              {/* SHARP layer: visible across the top cap, fades out before the
-                  lower band so it hands off to the blurred layer */}
+              {/* planet image fade: opaque across the visible cap, dissolving
+                  to nothing toward the lower (hidden) part of the sphere */}
               <linearGradient
                 id="tree-earth-fade"
                 gradientUnits="userSpaceOnUse"
@@ -234,8 +230,8 @@ export function ImpactTree() {
                 y2={GLOBE.y}
               >
                 <stop offset="0%" stopColor="#fff" stopOpacity="1" />
-                <stop offset="34%" stopColor="#fff" stopOpacity="1" />
-                <stop offset="60%" stopColor="#fff" stopOpacity="0" />
+                <stop offset="55%" stopColor="#fff" stopOpacity="1" />
+                <stop offset="100%" stopColor="#fff" stopOpacity="0" />
               </linearGradient>
               <mask id="tree-earth-mask">
                 <rect
@@ -246,41 +242,17 @@ export function ImpactTree() {
                   fill="url(#tree-earth-fade)"
                 />
               </mask>
-              {/* BLURRED layer: only the lower band, fading away at the very
-                  bottom so the planet melts into the end of the section */}
-              <linearGradient
-                id="tree-earth-bottom-fade"
-                gradientUnits="userSpaceOnUse"
-                x1="0"
-                y1={GLOBE.y - GLOBE.r}
-                x2="0"
-                y2={GLOBE.y}
-              >
-                <stop offset="30%" stopColor="#fff" stopOpacity="0" />
-                <stop offset="50%" stopColor="#fff" stopOpacity="1" />
-                <stop offset="68%" stopColor="#fff" stopOpacity="0.45" />
-                <stop offset="80%" stopColor="#fff" stopOpacity="0" />
-              </linearGradient>
-              <mask id="tree-earth-bottom-mask">
-                <rect
-                  x={GLOBE.x - GLOBE.r}
-                  y={GLOBE.y - GLOBE.r}
-                  width={GLOBE.r * 2}
-                  height={GLOBE.r * 2}
-                  fill="url(#tree-earth-bottom-fade)"
-                />
-              </mask>
               {/* gradient that blends the globe's base into the page bg */}
               <linearGradient
                 id="tree-bottom-blend"
                 gradientUnits="userSpaceOnUse"
                 x1="0"
-                y1={GLOBE.y - GLOBE.r + 300}
+                y1={GLOBE.y - GLOBE.r + 200}
                 x2="0"
                 y2={VIEW_H}
               >
                 <stop offset="0%" stopColor="var(--background)" stopOpacity="0" />
-                <stop offset="70%" stopColor="var(--background)" stopOpacity="0.85" />
+                <stop offset="55%" stopColor="var(--background)" stopOpacity="0.75" />
                 <stop offset="100%" stopColor="var(--background)" stopOpacity="1" />
               </linearGradient>
             </defs>
@@ -295,7 +267,8 @@ export function ImpactTree() {
               {/* soft glow behind the planet */}
               <circle cx={GLOBE.x} cy={GLOBE.y} r={GLOBE.r} fill="url(#tree-globe)" />
               <g clipPath="url(#tree-globe-clip)">
-                {/* sharp planet across the top cap */}
+                {/* realistic planet; a gradient overlay (below) handles the
+                    blend into the section end — no blur. */}
                 <image
                   href="/images/globe-earth.png"
                   x={GLOBE.x - GLOBE.r}
@@ -305,26 +278,15 @@ export function ImpactTree() {
                   preserveAspectRatio="xMidYMid slice"
                   mask="url(#tree-earth-mask)"
                 />
-                {/* blurred lower band that dissolves into the section end */}
-                <image
-                  href="/images/globe-earth.png"
-                  x={GLOBE.x - GLOBE.r}
-                  y={GLOBE.y - GLOBE.r}
-                  width={GLOBE.r * 2}
-                  height={GLOBE.r * 2}
-                  preserveAspectRatio="xMidYMid slice"
-                  filter="url(#tree-globeblur)"
-                  mask="url(#tree-earth-bottom-mask)"
-                />
               </g>
             </g>
 
-            {/* fade the globe's base into the page background */}
+            {/* gradient overlay that blends the globe's base into the page bg */}
             <rect
               x={0}
-              y={GLOBE.y - GLOBE.r + 300}
+              y={GLOBE.y - GLOBE.r + 200}
               width={VIEW_W}
-              height={VIEW_H - (GLOBE.y - GLOBE.r + 300)}
+              height={VIEW_H - (GLOBE.y - GLOBE.r + 200)}
               fill="url(#tree-bottom-blend)"
             />
 
