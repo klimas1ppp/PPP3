@@ -68,12 +68,13 @@ export function PhpImpact() {
             Yield, amplified locally
           </p>
           <h2 className="text-balance font-heading text-3xl font-semibold sm:text-4xl md:text-5xl">
-            Small yield, outsized impact
+            Simulate the impact of your yield
           </h2>
           <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-            When donated yield is exchanged into Philippine pesos (PHP), it goes
-            remarkably far. Local costs mean a modest amount of USDC yield funds
-            real, life-changing work on the ground.
+            This is an interactive simulation — adjust the yield amount to see
+            what it could achieve on the ground. When donated yield is exchanged
+            into Philippine pesos (PHP), it goes remarkably far: local costs mean
+            a modest amount of USDC yield can fund real, life-changing work.
           </p>
         </Reveal>
 
