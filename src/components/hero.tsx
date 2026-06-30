@@ -87,7 +87,7 @@ export function Hero() {
         className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-3xl flex-col items-center justify-between pb-20 pt-28 text-center sm:pb-24 sm:pt-28"
         style={{ opacity: containerOpacity }}
       >
-        {/* Top cluster: eyebrow + headline */}
+        {/* Top cluster: eyebrow + headline + supporting copy */}
         <div className="flex flex-col items-center">
           <p
             className="hero-rise mb-4 inline-block rounded-full border border-gold/30 bg-card/40 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold-soft backdrop-blur-sm"
@@ -103,36 +103,33 @@ export function Hero() {
             <br />
             <span className="text-gold gold-glow">donate the yield.</span>
           </h1>
-        </div>
-
-        {/* Bottom cluster: supporting copy + CTAs (tree floats in the gap above) */}
-        <div className="flex flex-col items-center">
           <p
-            className="hero-rise mx-auto max-w-xl text-pretty text-base leading-relaxed text-foreground sm:text-lg"
+            className="hero-rise mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-foreground sm:text-lg"
             style={{ animationDelay: '2.0s' }}
           >
             The seed is in your hands. Deposit USDC, withdraw anytime, and let
             the yield grow real, sustainable impact for communities in the
             Philippines.
           </p>
+        </div>
 
-          <div
-            className="hero-rise mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
-            style={{ animationDelay: '2.3s' }}
+        {/* Bottom cluster: CTAs only (tree floats in the clear gap above) */}
+        <div
+          className="hero-rise flex flex-col items-center justify-center gap-4 sm:flex-row"
+          style={{ animationDelay: '2.3s' }}
+        >
+          <a
+            href="#deposit"
+            className="rounded-full bg-gold px-8 py-3.5 text-sm font-semibold text-background transition-colors hover:bg-gold-soft"
           >
-            <a
-              href="#deposit"
-              className="rounded-full bg-gold px-8 py-3.5 text-sm font-semibold text-background transition-colors hover:bg-gold-soft"
-            >
-              Plant your seed
-            </a>
-            <a
-              href="#how"
-              className="rounded-full border border-gold/30 bg-card/40 px-8 py-3.5 text-sm font-semibold text-foreground backdrop-blur-sm transition-colors hover:border-gold/60"
-            >
-              How it works
-            </a>
-          </div>
+            Plant your seed
+          </a>
+          <a
+            href="#how"
+            className="rounded-full border border-gold/30 bg-card/40 px-8 py-3.5 text-sm font-semibold text-foreground backdrop-blur-sm transition-colors hover:border-gold/60"
+          >
+            How it works
+          </a>
         </div>
       </div>
 
