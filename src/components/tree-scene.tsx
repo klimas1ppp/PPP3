@@ -6,23 +6,21 @@ import * as THREE from 'three'
 
 type FadeRef = MutableRefObject<number>
 
-// ---- Golden tree billboard (chroma-keyed logo) ----
+// ---- Golden tree billboard (transparent logo, alpha-based) ----
 function TreeBillboard({ fade }: { fade: FadeRef }) {
-  const texture = useLoader(THREE.TextureLoader, '/images/tree-logo.png')
+  const texture = useLoader(THREE.TextureLoader, '/images/logo-tree.png')
   const groupRef = useRef<THREE.Group>(null)
   const matRef = useRef<THREE.ShaderMaterial>(null)
 
   const material = useMemo(() => {
     texture.colorSpace = THREE.SRGBColorSpace
+    texture.anisotropy = 8
     return new THREE.ShaderMaterial({
       transparent: true,
       uniforms: {
         map: { value: texture },
-        keyColor: { value: new THREE.Color(0.08, 0.2, 0.15) },
-        threshold: { value: 0.34 },
-        smoothing: { value: 0.07 },
         opacity: { value: 1 },
-        glow: { value: 1.18 },
+        glow: { value: 1.25 },
       },
       vertexShader: /* glsl */ `
         varying vec2 vUv;
@@ -33,18 +31,13 @@ function TreeBillboard({ fade }: { fade: FadeRef }) {
       `,
       fragmentShader: /* glsl */ `
         uniform sampler2D map;
-        uniform vec3 keyColor;
-        uniform float threshold;
-        uniform float smoothing;
         uniform float opacity;
         uniform float glow;
         varying vec2 vUv;
         void main() {
           vec4 c = texture2D(map, vUv);
-          float d = distance(c.rgb, keyColor);
-          float a = smoothstep(threshold, threshold + smoothing, d);
-          if (a <= 0.001) discard;
-          gl_FragColor = vec4(c.rgb * glow, a * opacity);
+          if (c.a <= 0.01) discard;
+          gl_FragColor = vec4(c.rgb * glow, c.a * opacity);
         }
       `,
     })
@@ -54,7 +47,10 @@ function TreeBillboard({ fade }: { fade: FadeRef }) {
     if (matRef.current) matRef.current.uniforms.opacity.value = fade.current
     if (groupRef.current) {
       const t = state.clock.elapsedTime
+      // gentle float + 3D sway for added depth
       groupRef.current.position.y = Math.sin(t * 0.6) * 0.08
+      groupRef.current.rotation.y = Math.sin(t * 0.4) * 0.22
+      groupRef.current.rotation.z = Math.sin(t * 0.3) * 0.025
       const s = 0.85 + fade.current * 0.15
       groupRef.current.scale.setScalar(s)
     }
@@ -63,7 +59,7 @@ function TreeBillboard({ fade }: { fade: FadeRef }) {
   return (
     <group ref={groupRef}>
       <mesh material={material}>
-        <planeGeometry args={[3.45, 4.18]} />
+        <planeGeometry args={[4.0, 4.0]} />
         <primitive object={material} ref={matRef} attach="material" />
       </mesh>
     </group>
