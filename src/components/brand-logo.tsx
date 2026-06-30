@@ -7,8 +7,8 @@ type BrandLogoProps = {
 };
 
 const SIZES = {
-  sm: { width: 32, height: 32, className: "h-8 w-8" },
-  lg: { width: 88, height: 88, className: "h-22 w-auto" },
+  sm: { width: 40, height: 40, className: "h-10 w-10" },
+  lg: { width: 128, height: 128, className: "h-28 w-auto" },
 } as const;
 
 export function BrandLogo({ size = "sm", className }: BrandLogoProps) {

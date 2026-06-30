@@ -63,12 +63,25 @@ export function SiteHeader() {
       >
         <Link
           href="/"
-          className="flex items-center gap-2"
+          className="group flex items-center gap-2.5"
           onClick={() => setOpen(false)}
         >
-          <BrandLogo size="sm" className="h-12 w-12" />
-          <span className="font-heading text-xl font-semibold leading-none tracking-wide text-gold">
-            PPP
+          <BrandLogo size="sm" className="-my-3 h-[4.25rem] w-[4.25rem]" />
+          <span className="flex items-center gap-2">
+            <span className="font-heading text-2xl font-semibold leading-none tracking-wide text-gold">
+              PPP
+            </span>
+            <span className="hidden flex-col border-l border-gold/30 pl-2 text-[0.62rem] font-medium uppercase leading-[1.35] tracking-[0.16em] text-muted-foreground transition-colors group-hover:text-foreground sm:flex">
+              <span>
+                <span className="text-gold">P</span>rincipal
+              </span>
+              <span>
+                <span className="text-gold">P</span>reserving
+              </span>
+              <span>
+                <span className="text-gold">P</span>hilanthropy
+              </span>
+            </span>
           </span>
         </Link>
 
