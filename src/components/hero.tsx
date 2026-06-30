@@ -84,7 +84,7 @@ export function Hero() {
       />
 
       <div
-        className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-3xl flex-col items-center justify-between pb-20 pt-20 text-center sm:pb-24 sm:pt-20"
+        className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-3xl flex-col items-center justify-between pb-20 pt-28 text-center sm:pb-24 sm:pt-28"
         style={{ opacity: containerOpacity }}
       >
         {/* Top cluster: eyebrow + headline */}

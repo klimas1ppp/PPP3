@@ -19,6 +19,7 @@ const NAV = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -27,6 +28,14 @@ export function SiteHeader() {
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Shrink the header once the user scrolls away from the very top.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (pathname !== "/") {
@@ -59,16 +68,25 @@ export function SiteHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/40 bg-background/70 backdrop-blur-md">
       <div
-        className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
+        className={`mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 transition-all duration-300 sm:px-6 ${
+          scrolled ? "h-16" : "h-24"
+        }`}
       >
         <Link
           href="/"
           className="group flex items-center gap-2.5"
           onClick={() => setOpen(false)}
         >
-          <BrandLogo size="sm" className="-my-3 h-[4.25rem] w-[4.25rem]" />
+          <BrandLogo
+            size="sm"
+            className={`-my-3 w-auto transition-all duration-300 ${
+              scrolled ? "h-[4.5rem]" : "h-[7rem]"
+            }`}
+          />
           <span
-            className="font-heading text-2xl font-semibold leading-none text-gold gold-glow"
+            className={`font-heading font-semibold leading-none text-gold gold-glow transition-all duration-300 ${
+              scrolled ? "text-2xl" : "text-3xl"
+            }`}
             aria-label="PPP"
           >
             {['P', 'P', 'P'].map((letter, i) => (
@@ -131,7 +149,9 @@ export function SiteHeader() {
 
       {open && (
         <div
-          className={`fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden top-14`}
+          className={`fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden ${
+            scrolled ? "top-16" : "top-24"
+          }`}
           onClick={() => setOpen(false)}
         >
           <nav
