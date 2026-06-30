@@ -67,21 +67,23 @@ export function SiteHeader() {
           onClick={() => setOpen(false)}
         >
           <BrandLogo size="sm" className="-my-3 h-[4.25rem] w-[4.25rem]" />
-          <span className="flex items-center gap-2">
-            <span className="font-heading text-2xl font-semibold leading-none tracking-wide text-gold">
-              PPP
-            </span>
-            <span className="hidden flex-col border-l border-gold/30 pl-2 text-[0.62rem] font-medium uppercase leading-[1.35] tracking-[0.16em] text-muted-foreground transition-colors group-hover:text-foreground sm:flex">
-              <span>
-                <span className="text-gold">P</span>rincipal
+          <span
+            className="font-heading text-2xl font-semibold leading-none text-gold gold-glow"
+            aria-label="PPP"
+          >
+            {['P', 'P', 'P'].map((letter, i) => (
+              <span
+                key={i}
+                className="inline-block transition-transform duration-300 group-hover:-translate-y-0.5"
+                style={{
+                  marginLeft: i === 0 ? 0 : '-0.08em',
+                  opacity: 1 - i * 0.18,
+                  transitionDelay: `${i * 60}ms`,
+                }}
+              >
+                {letter}
               </span>
-              <span>
-                <span className="text-gold">P</span>reserving
-              </span>
-              <span>
-                <span className="text-gold">P</span>hilanthropy
-              </span>
-            </span>
+            ))}
           </span>
         </Link>
 
