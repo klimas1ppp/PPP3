@@ -7,8 +7,8 @@ type BrandLogoProps = {
 };
 
 const SIZES = {
-  sm: { width: 28, height: 28, className: "h-7 w-7" },
-  lg: { width: 80, height: 81, className: "h-20 w-auto" },
+  sm: { width: 40, height: 40, className: "h-10 w-10" },
+  lg: { width: 128, height: 128, className: "h-28 w-auto" },
 } as const;
 
 export function BrandLogo({ size = "sm", className }: BrandLogoProps) {
@@ -16,7 +16,7 @@ export function BrandLogo({ size = "sm", className }: BrandLogoProps) {
 
   return (
     <Image
-      src="/logo-mark.png"
+      src="/logo-tree.svg"
       alt="PPP infinity tree logo"
       width={dim.width}
       height={dim.height}
