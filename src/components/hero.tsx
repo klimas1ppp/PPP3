@@ -84,10 +84,10 @@ export function Hero() {
       />
 
       <div
-        className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-3xl flex-col items-center justify-between pb-20 pt-28 text-center sm:pb-24 sm:pt-28"
+        className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-3xl flex-col items-center justify-between pb-20 pt-9 text-center sm:pb-24 sm:pt-9"
         style={{ opacity: containerOpacity }}
       >
-        {/* Top cluster: eyebrow + headline */}
+        {/* Top cluster: eyebrow + headline only (kept tight at the very top) */}
         <div className="flex flex-col items-center">
           <p
             className="hero-rise mb-4 inline-block rounded-full border border-gold/30 bg-card/40 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-gold-soft backdrop-blur-sm"
@@ -96,7 +96,7 @@ export function Hero() {
             Principal-preserving philanthropy
           </p>
           <h1
-            className="hero-rise text-balance font-heading text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
+            className="hero-rise text-balance font-heading text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl"
             style={{ animationDelay: '1.7s' }}
           >
             Keep your principal,
@@ -105,7 +105,8 @@ export function Hero() {
           </h1>
         </div>
 
-        {/* Bottom cluster: supporting copy + CTAs (tree floats in the gap above) */}
+        {/* Bottom cluster: supporting copy + CTAs (tree stays fully visible in
+            the clear band above) */}
         <div className="flex flex-col items-center">
           <p
             className="hero-rise mx-auto max-w-xl text-pretty text-base leading-relaxed text-foreground sm:text-lg"
@@ -115,7 +116,6 @@ export function Hero() {
             the yield grow real, sustainable impact for communities in the
             Philippines.
           </p>
-
           <div
             className="hero-rise mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
             style={{ animationDelay: '2.3s' }}
