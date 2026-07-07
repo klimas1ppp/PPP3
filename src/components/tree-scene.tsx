@@ -59,7 +59,7 @@ function TreeBillboard({ fade }: { fade: FadeRef }) {
   return (
     <group ref={groupRef}>
       <mesh material={material}>
-        <planeGeometry args={[4.0, 4.0]} />
+        <planeGeometry args={[3.3, 3.3]} />
         <primitive object={material} ref={matRef} attach="material" />
       </mesh>
     </group>
